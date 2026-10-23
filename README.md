@@ -75,4 +75,6 @@ affected.
 
 ## Cost
 
-See `results/cost.txt` for the total and per-model API spend of the logged runs.
+See `results/cost.txt` for the total and per-model API spend of the main run ($12.83 for 960 runs).
+The extension runs (`runs/ext_*.jsonl`) cost a further $13.30: $8.41 for the 480 high-effort runs and
+$4.88 for the 360 provenance runs.
