@@ -199,7 +199,7 @@ def fig_ratings(df: pd.DataFrame, path: str) -> None:
     matplotlib.rcParams.update({"pdf.fonttype": 42, "font.size": 8, "axes.spines.top": False, "axes.spines.right": False})
     models = sorted(df["model"].unique(), key=lambda m: list(MODEL_LABEL).index(m) if m in MODEL_LABEL else 99)
     tickers = [t for t in P.TICKERS if t in set(df["ticker"])] or sorted(df["ticker"].unique())
-    fig, axes = plt.subplots(len(models), len(tickers), figsize=(6.3, 1.6 * len(models) + 0.5), squeeze=False, sharex=True, sharey=True)
+    fig, axes = plt.subplots(len(models), len(tickers), figsize=(6.3, 1.2 * len(models) + 0.5), squeeze=False, sharex=True, sharey=True)
     width = 0.2
     for i, m in enumerate(models):
         for j, t in enumerate(tickers):
@@ -233,7 +233,7 @@ def fig_excess(pooled_df: pd.DataFrame, path: str) -> None:
     import matplotlib.pyplot as plt
     matplotlib.rcParams.update({"pdf.fonttype": 42, "font.size": 8, "axes.spines.top": False, "axes.spines.right": False})
     models = list(pooled_df["model"])
-    fig, ax = plt.subplots(figsize=(6.3, 2.6))
+    fig, ax = plt.subplots(figsize=(6.3, 2.2))
     x = np.arange(len(models))
     off = {"C1": -0.22, "C2": 0.0, "C3": 0.22}
     for c in ("C1", "C2", "C3"):

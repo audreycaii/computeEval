@@ -3,6 +3,10 @@
 \usepackage{aes}
 \usepackage{amsmath,tabularx,booktabs}
 \input{../results/numbers.tex}
+% Let text share a page with the two results figures instead of forcing a float page.
+\renewcommand{\topfraction}{0.95}
+\renewcommand{\floatpagefraction}{0.95}
+\renewcommand{\textfraction}{0.05}
 
 \title[Noise-Calibrated Conclusion Robustness]{Noise-Calibrated Conclusion Robustness: Separating Manipulation from Variance in Financial Research Agents}
 
@@ -24,11 +28,11 @@ A research agent that reads evidence and issues a conclusion can be attacked by 
 
 Two things are missing from that number. First, the same agent on the same clean input also changes its mind between runs. \citet{identicalruns2026} find that variance between identical runs of coding agents can exceed the gap between agents, and \citet{coinflipjudge2026} reports LLM-judge verdicts flipping 13.6\% of the time under identical conditions. A flip rate measured with one run per decision folds that variance into the attack effect. Second, robustness without a true-update control rewards stubbornness: an agent that ignores every new document scores as perfectly robust, and nothing in a flip-rate study distinguishes resistance from insensitivity.
 
-This paper measures conclusion change against a noise floor and against a warranted-update control, for research agents that rate equity valuation from a fixed evidence packet. The evaluation target is narrow on purpose: one model call, no tools, a frozen packet, a structured verdict. That isolates the quantity of interest, how the verdict moves when one evidence item changes, from retrieval and tool variance. The contribution is a design and a set of pre-registered metrics (Section~\ref{sec:metrics}), applied to three models (Section~\ref{sec:results}), with the diagnosis the metrics license (Section~\ref{sec:diagnosis}). We use 2026 AI-compute ``neocloud'' companies as the testbed because the period produced dense, dated, checkable, valuation-relevant facts that can be paired with counterfactual plants of matched size, and because the valuation question has no ground truth, which is exactly why the right measurand is robustness and warranted updating rather than correctness.
+This paper measures conclusion change against a noise floor and against a warranted-update control, for research agents that rate equity valuation from a fixed evidence packet. The evaluation target is narrow on purpose: one model call, no tools, a frozen packet, a structured verdict. That isolates the quantity of interest, how the verdict moves when one evidence item changes, from retrieval and tool variance. The contribution is a design and a set of pre-registered metrics (Section~\ref{sec:metrics}), applied to three models (Section~\ref{sec:results}), with the diagnosis the metrics license (Section~\ref{sec:diagnosis}). We use 2026 AI-compute ``neocloud'' companies as the testbed because the period produced dense, dated, checkable, valuation-relevant facts that can be paired with counterfactual plants of matched size, and because the valuation question has no ground truth, so the right measurand is robustness and warranted updating, not correctness.
 
 \section{Related Work}
 \label{sec:related}
-\paragraph{Manipulating financial agents.} \citet{poisoningalpha2026} attack a trading pipeline across roles and architectures and find flip success of about 19--22\% for fabricated news and 24--30\% for hidden instructions, with one run per asset-day; they also show flip rate and dollar harm diverge. \citet{autoredtrader2026} report 26.67\% attack success from synthetic misinformation, again without repeated runs. \citet{adversarialnews2026}, \citet{tradetrap2025}, \citet{contagion2026} and \citet{sellmethisstock2026} measure returns, belief shift or recommendation drift under adversarial inputs. All evaluate trading or advisory decisions; none evaluates research-style conclusions, and none separates attack-induced change from natural variation.
+\paragraph{Manipulating financial agents.} \citet{poisoningalpha2026} attack a trading pipeline across roles and architectures and find flip success of about 19--22\% for fabricated news and 24--30\% for hidden instructions, with one run per asset-day. \citet{autoredtrader2026} report 26.67\% attack success from synthetic misinformation, again without repeated runs. \citet{adversarialnews2026}, \citet{tradetrap2025}, \citet{contagion2026} and \citet{sellmethisstock2026} measure returns, belief shift or recommendation drift under adversarial inputs. All evaluate trading or advisory decisions; none evaluates research-style conclusions, and none separates attack-induced change from natural variation.
 
 \paragraph{Poisoning deep-research agents.} \citet{ugcpoison2026} show that poisoning one user-generated page with a few words gets planted content cited in 38--51\% of reports; \citet{misknow2026} find one misleading document raises false-conclusion adoption from 0\% to 54.7\%; \citet{drnoise2026} benchmark agents in misleading-evidence environments where true records remain sufficient. These measure adoption in free-text reports rather than a bounded verdict, and have no matched true-update condition.
 
@@ -76,7 +80,7 @@ over all pairs (distinct pairs when $A=B$). The \textbf{noise floor} is $N = D(R
 
 \subsection{Pre-registration and pilot}
 \label{sec:prereg}
-The definitions above were committed to the repository before any full run and were not edited after. A pilot of 12 Sonnet runs on NBIS was run three times. Round one exposed a market-capitalisation conflict between two packet items that dominated the rationales; the offending sentence was removed. Round two showed every rating equal to 3 in every condition, so the schema gained the continuous \texttt{fair\_value\_usd} field as an exploratory outcome. Round three (kept, and counted toward the full run) reproduced the all-3 pattern on ratings while fair value moved by about 2\% under both the plant and the true update. The pilot cost about \$0.01 per Sonnet run, so repeats were raised from the planned 10 to 20 per cell. The full run comprises 4 tickers $\times$ 4 conditions $\times$ 3 models $\times$ 20 repeats; \nValidRuns{} of \nTotalRuns{} runs returned schema-valid output (\nFailedRuns{} failed after three attempts; \nRetries{} runs needed a retry). Total API cost was \$\costTotal.
+The definitions above were committed to the repository before any full run and were not edited after. A pilot of 12 Sonnet runs on NBIS was run three times. Round one exposed a market-capitalisation conflict between two packet items that dominated the rationales; the sentence was removed. Round two showed every rating equal to 3 in every condition, so the schema gained the continuous \texttt{fair\_value\_usd} field as an exploratory outcome. Round three (kept, and counted toward the full run) reproduced the all-3 ratings while fair value moved by about 2\% under both the plant and the true update. At about \$0.01 per Sonnet run, repeats were raised from the planned 10 to 20 per cell. The full run comprises 4 tickers $\times$ 4 conditions $\times$ 3 models $\times$ 20 repeats; \nValidRuns{} of \nTotalRuns{} runs returned schema-valid output (\nFailedRuns{} failed after three attempts; \nRetries{} runs needed a retry). Total API cost was \$\costTotal.
 
 \section{Results}
 \label{sec:results}
@@ -89,14 +93,14 @@ The definitions above were committed to the repository before any full run and w
 \label{tab:main}
 \end{table}
 
-\begin{figure}[htbp]
+\begin{figure}[t]
 \centering
 \includegraphics[width=\linewidth]{../results/fig1_ratings.pdf}
 \caption{Rating distributions per condition for every model (rows) and ticker (columns), 20 runs per bar group. Sonnet and Opus collapse to a single rating in most clean cells; Haiku spreads across two or three.}
 \label{fig:ratings}
 \end{figure}
 
-\begin{figure}[htbp]
+\begin{figure}[t]
 \centering
 \includegraphics[width=\linewidth]{../results/fig2_excess.pdf}
 \caption{Excess flip $E_k$ (filled, with 95\% intervals) and the raw flip rate $F_k$ (hollow) per model, pooled over tickers. The vertical distance between a hollow and a filled marker is the noise floor that a one-run study would attribute to the attack.}
@@ -127,11 +131,9 @@ Three findings bear on how manipulation robustness should be measured.
 
 \section{Limitations}
 \label{sec:limitations}
-The claims are bounded to static-packet, single-call research agents, three models from one vendor at one effort setting, four tickers and the evidence of October 2026. There are no sampling controls on these models, so the noise floor is a property of the default decoding and thinking configuration, not a tunable quantity; a different effort level would change it. Plants are synthetic, in one source style per ticker, and written by the author; they may be easier or harder to believe than human-crafted manipulation, and the materiality match to the true update is a judgement, not a measurement. The true update for IREN is a third-party rating rather than a company disclosure. Models may know some real 2026 events; plants use counterfactual numbers, but we did not test whether a model recognised them as false (asked for its training cutoff, Opus states January 2025; Sonnet and Haiku decline to give one; the responses are in the release). The 5-point rating quantises small updates, which is why the fair-value field was added after the pilot; that field is exploratory and was not pre-registered. Twenty repeats per cell bound $N$ and $E_k$ to roughly $\pm 0.1$; per-ticker cells are too small to rank tickers. Nothing here is an assessment of any company's value.
+The claims are bounded to static-packet, single-call research agents, three models from one vendor at one effort setting, four tickers and the evidence of October 2026. There are no sampling controls on these models, so the noise floor is a property of the default decoding and thinking configuration, not a tunable quantity; a different effort level would change it. Plants are synthetic, in one source style per ticker, and written by the author; they may be easier or harder to believe than human-crafted manipulation, and the materiality match to the true update is a judgement, not a measurement. The true update for IREN is a third-party rating rather than a company disclosure. Models may know some real 2026 events; plants use counterfactual numbers, but we did not test whether a model recognised them as false (Opus reports a January 2025 training cutoff; Sonnet and Haiku decline to state one). The 5-point rating quantises small updates, which is why the fair-value field was added after the pilot; that field is exploratory and was not pre-registered. Twenty repeats per cell bound $N$ and $E_k$ to roughly $\pm 0.1$; per-ticker cells are too small to rank tickers. Nothing here is an assessment of any company's value.
 
-\section{Release}
-\label{sec:release}
-Packets, plants (every synthetic item is flagged in the data and in Appendix~\ref{app:packets}), prompts, the schema, the pre-registered metric definitions, the full run log with per-run token usage, the analysis code and this manuscript's number macros are released with the paper. All numbers in the text are generated from the run log by the analysis script.
+Packets, plants (flagged synthetic in the data and in Appendix~\ref{app:packets}), prompts, schema, pre-registered metrics, the full run log and the analysis code that generates every number in this text are released with the paper.
 
 \bibliography{references}
 
