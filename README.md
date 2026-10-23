@@ -15,6 +15,8 @@ for this evaluation and are not factual. Nothing in this repository is investmen
 | Path | What it holds |
 |---|---|
 | `METRICS.md` | Pre-registered metric definitions, committed before the pilot and unchanged since |
+| `METRICS-EXT.md` | Pre-registered extension metrics (effort replication, provenance gradient, repeats needed), committed before the extension runs |
+| `src/analyze_ext.py` | Extension analyses: `python3 -m src.analyze_ext` reads `runs/ext_*.jsonl` and writes `results/ext_*` and `results/numbers_ext.tex` |
 | `packets/<TICKER>.json` | Evidence items per ticker with role tags and sources (as of 2026-10-01) |
 | `prompts/` | System prompt, question template, output JSON schema |
 | `src/packets.py` | Renders a packet for a condition; deterministic, hashed |
@@ -38,6 +40,9 @@ python3 -m src.run --dry-run                           # print the first prompt
 python3 -m src.run --models claude-sonnet-5-5 --tickers NBIS --repeats 3 --out runs/pilot.jsonl
 python3 -m src.run --repeats 20 --out runs/runs.jsonl --concurrency 6   # full run, resumable
 python3 -m src.analyze --runs runs/runs.jsonl --out results --cutoffs    # tables, figures, macros
+python3 -m src.run --effort high --repeats 10 --out runs/ext_effort_high.jsonl --concurrency 4
+for st in filing wire forum; do python3 -m src.run --conditions C1 --plant-style $st --repeats 10 --out runs/ext_provenance_$st.jsonl; done
+python3 -m src.analyze_ext                             # extension tables, figures, macros
 sh paper/build.sh                                      # needs tools/tectonic (see below)
 ```
 

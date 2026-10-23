@@ -3,6 +3,7 @@
 \usepackage{aes}
 \usepackage{amsmath,tabularx,booktabs}
 \input{../results/numbers.tex}
+\input{../results/numbers_ext.tex}
 % Let text share a page with the two results figures instead of forcing a float page.
 \renewcommand{\topfraction}{0.95}
 \renewcommand{\floatpagefraction}{0.95}
@@ -28,7 +29,7 @@ A research agent that reads evidence and issues a conclusion can be attacked by 
 
 Two things are missing from that number. First, the same agent on the same clean input also changes its mind between runs. \citet{identicalruns2026} find that variance between identical runs of coding agents can exceed the gap between agents, and \citet{coinflipjudge2026} reports LLM-judge verdicts flipping 13.6\% of the time under identical conditions. A flip rate measured with one run per decision folds that variance into the attack effect. Second, robustness without a true-update control rewards stubbornness: an agent that ignores every new document scores as perfectly robust, and nothing in a flip-rate study distinguishes resistance from insensitivity.
 
-This paper measures conclusion change against a noise floor and against a warranted-update control, for research agents that rate equity valuation from a fixed evidence packet. The evaluation target is narrow on purpose: one model call, no tools, a frozen packet, a structured verdict, which isolates how the verdict moves when one evidence item changes from retrieval and tool variance. The contribution is a design and a set of pre-registered metrics (Section~\ref{sec:metrics}; two additions made after the pilot are marked), applied to three models (Section~\ref{sec:results}), with the diagnosis the metrics license (Section~\ref{sec:diagnosis}). We use 2026 AI-compute ``neocloud'' companies as the testbed because the period produced dense, dated, checkable, valuation-relevant facts that can be paired with counterfactual plants, and because the valuation question has no ground truth, so the right measurand is robustness and warranted updating, not correctness.
+This paper measures conclusion change against a noise floor and against a warranted-update control, for research agents that rate equity valuation from a fixed evidence packet. The evaluation target is narrow on purpose: one model call, no tools, a frozen packet, a structured verdict, which isolates how the verdict moves when one evidence item changes from retrieval and tool variance. The contribution is a design and a set of pre-registered metrics (Section~\ref{sec:metrics}; two additions made after the pilot are marked), applied to three models (Section~\ref{sec:results}), three pre-registered extensions on reasoning effort, source provenance and the number of repeats an evaluator needs (Section~\ref{sec:ext}), and the diagnosis the metrics license (Section~\ref{sec:diagnosis}). We use 2026 AI-compute ``neocloud'' companies as the testbed because the period produced dense, dated, checkable, valuation-relevant facts that can be paired with counterfactual plants, and because the valuation question has no ground truth, so the right measurand is robustness and warranted updating, not correctness.
 
 \section{Related Work}
 \label{sec:related}
@@ -95,13 +96,6 @@ The metric definitions were committed to the repository before any full run and 
 
 \begin{figure}[t]
 \centering
-\includegraphics[width=\linewidth]{../results/fig1_ratings.pdf}
-\caption{Rating distributions per condition for every model (rows) and ticker (columns), 20 runs per bar group. Sonnet and Opus collapse to a single rating in most clean cells; Haiku spreads across two ratings on NBIS and IREN.}
-\label{fig:ratings}
-\end{figure}
-
-\begin{figure}[t]
-\centering
 \includegraphics[width=\linewidth]{../results/fig2_excess.pdf}
 \caption{Excess flip $E_k$ (filled, with 95\% intervals) and the raw flip rate $F_k$ (hollow) per model, pooled over tickers. The vertical distance between a hollow and a filled marker is the noise floor that a one-run study would attribute to the added item.}
 \label{fig:excess}
@@ -117,6 +111,40 @@ The metric definitions were committed to the repository before any full run and 
 
 \paragraph{Exploratory: fair value moves where the rating does not.} The signed fair-value shift $V_1$/$V_2$ is \mOpusVone{}\%/\mOpusVtwo{}\% for Opus, \mSonnetVone{}\%/\mSonnetVtwo{}\% for Sonnet and \mHaikuVone{}\%/\mHaikuVtwo{}\% for Haiku, against \mOpusVthree{}\%/\mSonnetVthree{}\%/\mHaikuVthree{}\% under the immaterial item; this measure has no noise floor. On NBIS, where Sonnet's rating never leaves 3, its fair value still rises by \cSonnetNBISVone{}\% under the plant and \cSonnetNBISVtwo{}\% under the true update (immaterial item: \cSonnetNBISVthree{}\%), so on that ticker part of the apparent insensitivity is quantisation; on CRWV Sonnet's fair value does not move either (\cSonnetCRWVVone{}\%).
 
+\subsection{Extensions: effort, provenance and repeats}
+\label{sec:ext}
+Three extensions were pre-registered in a second file after the main analysis and before their runs.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{../results/fig3_effort.pdf}
+\caption{Pooled metrics at effort = medium (filled circles, 20 repeats) and effort = high (hollow squares, 10 repeats), with 95\% intervals.}
+\label{fig:effort}
+\end{figure}
+
+\paragraph{Effort replication.} %EXT-A
+The whole design was rerun at \texttt{effort = high} with 10 repeats per cell (\xOpusHighRuns{} + \xSonnetHighRuns{} + \xHaikuHighRuns{} runs). EXTA-TEXT
+
+\paragraph{Provenance gradient.} %EXT-B
+The false plant's text was held fixed and only its source label changed, to a filing excerpt, a news-wire report or a forum post, at effort = medium with 10 repeats per cell against the main run's clean cells (Table~\ref{tab:prov}). EXTB-TEXT
+
+\begin{table}[t]
+\centering
+\small
+\begin{minipage}[c]{0.56\linewidth}
+\centering
+\input{../results/ext_provenance_table.tex}
+\end{minipage}\hfill
+\begin{minipage}[c]{0.42\linewidth}
+\centering
+\includegraphics[width=\linewidth]{../results/fig4_repeats.pdf}
+\end{minipage}
+\caption{Left: pooled $E_1$ by the source label on the same plant text (original label as in Table~\ref{tab:conditions}), with 95\% intervals. Right: half-width of the 95\% interval on pooled $E_1$ when each cell is estimated from $n$ runs per condition, resampled from the main run.}
+\label{tab:prov}
+\end{table}
+
+\paragraph{Repeats needed.} Resampling $n$ runs per condition from each cell of the main run, a one-run design records a raw flip for Haiku in \xHaikuRepOneAgree{} of draws with a half-width of \xHaikuRepOneHalfwidth{} and no noise floor to subtract. With three repeats the sign of pooled $E_1$ matches the full-data sign in \xHaikuRepThreeAgree{} of draws for Haiku and \xOpusRepThreeAgree{}/\xSonnetRepThreeAgree{} for Opus/Sonnet; with five it is \xHaikuRepFiveAgree{} for Haiku and the half-width is \xHaikuRepFiveHalfwidth{} (Opus \xOpusRepFiveHalfwidth{}, Sonnet \xSonnetRepFiveHalfwidth{}); twenty repeats bring Haiku to \xHaikuRepTwentyHalfwidth{}. Five repeats per condition, forty calls per cell, buy the sign; precision below $\pm 0.1$ on a noisy model costs twenty.
+
 \section{Diagnosis}
 \label{sec:diagnosis}
 Four findings bear on how manipulation robustness should be measured.
@@ -131,7 +159,7 @@ Four findings bear on how manipulation robustness should be measured.
 
 \section{Limitations}
 \label{sec:limitations}
-The claims are bounded to static-packet, single-call research agents, three models from one vendor at one effort setting, four tickers and the evidence of October 2026. ``Credulous'' and ``unwarranted'' are relative to ground truth, not to instructions: the prompt declares every item admissible, so a model that updates on a plant follows its instructions, and $E_1$ measures sensitivity to an unverifiable, admissible counterfactual item. With no sampling controls, the noise floor is a property of the default decoding and thinking configuration and could change with effort. Plants are synthetic, in one source style per ticker, written by the author, and may be easier or harder to believe than human-crafted manipulation. Models may know some real 2026 events; plants use counterfactual numbers, but we did not test whether a model recognised them as false (self-reported training cutoffs are unreliable, and the vendor's documented cutoffs may post-date several 2026 base items). Per-cell intervals are wide (up to about $\pm 0.3$ on $E_k$ for Haiku), single-valued cells have zero-width intervals by construction, and pooled intervals hold the four tickers fixed, so they do not generalise across tasks. Nothing here is an assessment of any company's value.
+The claims are bounded to static-packet, single-call research agents, three models from one vendor at two effort settings, four tickers and the evidence of October 2026. ``Credulous'' and ``unwarranted'' are relative to ground truth, not to instructions: the prompt declares every item admissible, so a model that updates on a plant follows its instructions, and $E_1$ measures sensitivity to an unverifiable, admissible counterfactual item. With no sampling controls, the noise floor is a property of the default decoding and thinking configuration and could change with effort. Plants are synthetic, in one source style per ticker, written by the author, and may be easier or harder to believe than human-crafted manipulation. Models may know some real 2026 events; plants use counterfactual numbers, but we did not test whether a model recognised them as false (self-reported training cutoffs are unreliable, and the vendor's documented cutoffs may post-date several 2026 base items). Per-cell intervals are wide (up to about $\pm 0.3$ on $E_k$ for Haiku), single-valued cells have zero-width intervals by construction, and pooled intervals hold the four tickers fixed, so they do not generalise across tasks. Nothing here is an assessment of any company's value.
 
 \bibliography{references}
 
@@ -147,6 +175,12 @@ Packets, plants (flagged synthetic in the data and in Appendix~\ref{app:packets}
 
 \section{Per-cell results}
 \label{app:cells}
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\linewidth]{../results/fig1_ratings.pdf}
+\caption{Rating distributions per condition for every model (rows) and ticker (columns) at effort = medium, 20 runs per bar group. Sonnet and Opus collapse to a single rating in most clean cells; Haiku spreads across two ratings on NBIS and IREN.}
+\label{fig:ratings}
+\end{figure}
 \begin{table}[htbp]
 \centering
 \small
