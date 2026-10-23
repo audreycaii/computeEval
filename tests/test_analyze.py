@@ -47,3 +47,18 @@ def test_table1_is_valid_latex(tmp_path):
     tex = open(path).read()
     assert "\\toprule" in tex and "\\bottomrule" in tex
     assert tex.count("\\\\") >= 3  # header + 2 model rows
+
+
+def test_numbers_tex_macros(tmp_path):
+    df = A.load_runs(FIX)
+    cells = A.per_cell(df, n_boot=50)
+    pooled_df = A.pooled(cells)
+    all_rows = A.load_all_rows(FIX)
+    path = str(tmp_path / "numbers.tex")
+    A.write_numbers(pooled_df, cells, all_rows, path)
+    tex = open(path).read()
+    assert "\\newcommand{\\nValidRuns}{45}" in tex
+    assert "\\newcommand{\\nTotalRuns}{48}" in tex
+    assert "\\newcommand{\\mmAEone}{" in tex  # per-model macros: \m + letters of the model label
+    assert "\\newcommand{\\mmADiag}{resistant-responsive}" in tex
+    assert "\\newcommand{\\costTotal}{0.48}" in tex
