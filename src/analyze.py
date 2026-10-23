@@ -287,6 +287,8 @@ def write_numbers(pooled_df: pd.DataFrame, cells: pd.DataFrame, all_rows: pd.Dat
             lines.append("\\newcommand{\\m%s%s%s}{%s}" % (m, word, idx, _num(r[k])))
             lines.append("\\newcommand{\\m%s%s%sLo}{%s}" % (m, word, idx, _num(r[k + "_lo"])))
             lines.append("\\newcommand{\\m%s%s%sHi}{%s}" % (m, word, idx, _num(r[k + "_hi"])))
+        lines.append("\\newcommand{\\m%sEoneNet}{%s}" % (m, _num(r["E1"] - r["E3"])))
+        lines.append("\\newcommand{\\m%sEtwoNet}{%s}" % (m, _num(r["E2"] - r["E3"])))
         lines.append("\\newcommand{\\m%sDiag}{%s}" % (m, r["diagnosis"]))
         for c in P.CONDITIONS:
             word = {"0": "zero", "1": "one", "2": "two", "3": "three"}[c[1]]
@@ -309,7 +311,8 @@ def fetch_cutoffs(models: List[str], path: str) -> None:
     client = anthropic.Anthropic()
     out = {}
     for m in models:
-        resp = client.messages.create(model=m, max_tokens=200, messages=[{"role": "user", "content": "What is your training data cutoff? Answer with a month and year only."}])
+        resp = client.messages.create(model=m, max_tokens=4000, output_config={"effort": "low"},
+                                      messages=[{"role": "user", "content": "What is your training data cutoff? Answer with a month and year only."}])
         out[m] = next((b.text for b in resp.content if getattr(b, "type", None) == "text"), None)
     with open(path, "w") as f:
         json.dump(out, f, indent=2)

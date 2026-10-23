@@ -61,6 +61,7 @@ def test_numbers_tex_macros(tmp_path):
     assert "\\newcommand{\\nTotalRuns}{48}" in tex
     assert "\\newcommand{\\mmAEone}{" in tex  # per-model macros: \m + letters of the model label
     assert "\\newcommand{\\mmADiag}{resistant-responsive}" in tex
+    assert "\\newcommand{\\mmAEoneNet}{" in tex
     assert "\\newcommand{\\costTotal}{0.48}" in tex
 
 

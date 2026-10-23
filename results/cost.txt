@@ -1,0 +1,6 @@
+total_usd 12.8311
+total_runs 960
+valid_runs 960
+claude-haiku-5-5 usd 0.2744 runs 320 valid 320 retries 1
+claude-opus-5-5 usd 9.1634 runs 320 valid 320 retries 0
+claude-sonnet-5-5 usd 3.3933 runs 320 valid 320 retries 2
