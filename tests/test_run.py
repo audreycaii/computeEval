@@ -106,3 +106,27 @@ def test_api_schema_strips_unsupported_keywords():
     assert s["properties"]["rating"]["type"] == "integer"
     assert R.schema()["properties"]["rating"]["minimum"] == 1  # original untouched
     assert R.build_request("claude-haiku-5-5", "NBIS", "C0")["output_config"]["format"]["schema"] == s
+
+
+def test_parse_rejects_bool_rating():
+    out = json.loads(_valid_output())
+    out["rating"] = True
+    assert R.parse_output(json.dumps(out), ["NBIS-04"])[1] is False
+
+
+def test_record_reset_between_attempts():
+    class Flaky:
+        def __init__(self):
+            self.calls = 0
+
+        def create(self, **kwargs):
+            self.calls += 1
+            if self.calls == 1:
+                return NS(content=[NS(type="text", text=_valid_output(rating=9))], stop_reason="end_turn",
+                          model=kwargs["model"], usage=NS(input_tokens=1, output_tokens=1), stop_details=None)
+            return NS(content=[], stop_reason="refusal", model=kwargs["model"],
+                      usage=NS(input_tokens=1, output_tokens=1), stop_details=None)
+
+    client = NS(messages=Flaky())
+    rec = R.execute(client, R.RunSpec("claude-haiku-5-5", "NBIS", "C0", 0), max_attempts=2)
+    assert rec["parse_ok"] is False and rec["error"] == "refusal" and rec["parsed"] is None

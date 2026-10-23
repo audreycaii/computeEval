@@ -66,3 +66,18 @@ def test_diagnosis():
     assert M.diagnosis(0.4, 0.4) == "credulous"
     assert M.diagnosis(0.4, 0.0) == "mixed"
     assert M.diagnosis(float("nan"), 0.4) == "undefined"
+
+
+def test_bootstrap_samples_shape_and_range():
+    s = M.bootstrap_samples(HAND, ATT, 1, n_boot=50, seed=0)
+    assert set(s) >= {"N", "E1", "E2", "E3", "S1", "A1"}
+    assert len(s["N"]) == 50
+    assert all(0.0 <= v <= 1.0 for v in s["N"])
+    # bootstrap_cell must be the percentile summary of these same samples
+    b = M.bootstrap_cell(HAND, ATT, 1, n_boot=50, seed=0)
+    import numpy as np
+    assert b["E1"][1] == float(np.percentile(s["E1"], 2.5))
+
+
+def test_pairwise_cross_too_few_pairs():
+    assert math.isnan(M.pairwise_disagreement([3], [4]))

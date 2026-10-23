@@ -12,7 +12,7 @@ from src import metrics as M
 from src import packets as P
 
 PALETTE = {"C0": "#0072b2", "C1": "#d55e00", "C2": "#009e73", "C3": "#e69f00"}  # validated, CVD-safe
-COND_LABEL = {"C0": "C0 clean", "C1": "C1 false plant", "C2": "C2 true update", "C3": "C3 noise"}
+COND_LABEL = {"C0": "C0 clean", "C1": "C1 false plant", "C2": "C2 true update", "C3": "C3 immaterial item"}
 MODEL_LABEL = {"claude-opus-5-5": "Opus 5.5", "claude-sonnet-5-5": "Sonnet 5.5", "claude-haiku-5-5": "Haiku 5.5"}
 METRIC_COLS = ["N", "F1", "F2", "F3", "E1", "E2", "E3", "S1", "S2", "S3", "A1", "A2", "A3"]
 FV_COLS = ["V1", "V2", "V3"]  # exploratory: fair-value shift, % of C0 mean, signed by direction for C1/C2
@@ -39,6 +39,10 @@ def load_runs(path: str) -> pd.DataFrame:
             })
     df = pd.DataFrame(rows)
     df["attributed"] = df["attributed"].astype(bool)
+    keys = list(zip(df["model"], df["ticker"], df["condition"], df["repeat"]))
+    if len(set(keys)) != len(keys):
+        dup = [k for k in set(keys) if keys.count(k) > 1][:3]
+        raise ValueError("duplicate (model, ticker, condition, repeat) records in %s, e.g. %s" % (path, dup))
     return df[df["parse_ok"]].reset_index(drop=True)
 
 
@@ -69,56 +73,61 @@ def _fv_shift(fv: Dict[str, List[float]], direction: int) -> Dict[str, float]:
     return out
 
 
-def _fv_bootstrap(fv: Dict[str, List[float]], direction: int, n_boot: int, seed: int) -> Dict[str, tuple]:
+def _fv_samples(fv: Dict[str, List[float]], direction: int, n_boot: int, seed: int) -> Dict[str, np.ndarray]:
     rng = np.random.default_rng(seed + 1)
     point = _fv_shift(fv, direction)
-    samples = {k: [] for k in point}
-    for _ in range(n_boot):
+    samples = {k: np.full(n_boot, float("nan")) for k in point}
+    for b in range(n_boot):
         rs = {c: ([v[i] for i in rng.integers(0, len(v), size=len(v))] if v else []) for c, v in fv.items()}
         s = _fv_shift(rs, direction)
         for k in point:
-            samples[k].append(s[k])
-    out = {}
-    for k in point:
-        arr = np.array([v for v in samples[k] if not math.isnan(v)])
-        out[k] = (point[k], float(np.percentile(arr, 2.5)), float(np.percentile(arr, 97.5))) if len(arr) and not math.isnan(point[k]) else (point[k], float("nan"), float("nan"))
-    return out
+            samples[k][b] = s[k]
+    return samples
 
 
 def per_cell(df: pd.DataFrame, n_boot: int = 2000, seed: int = 0) -> pd.DataFrame:
+    """One row per (model, ticker). The per-cell bootstrap samples are kept in the frame's
+    ``attrs["samples"]`` so that pooled() can average them as METRICS.md specifies."""
     rows = []
+    all_samples = {}
     for (model, ticker), g in df.groupby(["model", "ticker"], sort=True):
         ratings, attributed, fv = _cell_inputs(g)
         direction = P.DIRECTION.get(ticker, int(g["direction"].iloc[0]))
-        boot = M.bootstrap_cell(ratings, attributed, direction, n_boot=n_boot, seed=seed)
-        fvb = _fv_bootstrap(fv, direction, n_boot, seed)
         point = M.cell_metrics(ratings, attributed, direction)
+        samples = M.bootstrap_samples(ratings, attributed, direction, n_boot=n_boot, seed=seed)
+        fv_point = _fv_shift(fv, direction)
+        samples.update(_fv_samples(fv, direction, n_boot, seed))
+        all_samples[(model, ticker)] = samples
         row = {"model": model, "ticker": ticker, "direction": direction}
         for k in METRIC_COLS:
-            row[k], row[k + "_lo"], row[k + "_hi"] = boot[k]
+            row[k], row[k + "_lo"], row[k + "_hi"] = M.summarize_samples(point[k], samples[k])
         for k in FV_COLS:
-            row[k], row[k + "_lo"], row[k + "_hi"] = fvb[k]
+            row[k], row[k + "_lo"], row[k + "_hi"] = M.summarize_samples(fv_point[k], samples[k])
         for c in P.CONDITIONS:
             row["n" + c[1]] = point["n" + c[1]]
             row["conf" + c[1]] = float(np.mean(g[g.condition == c]["confidence"])) if (g.condition == c).any() else float("nan")
+        row["n_unknown"] = int(g["hallucinated_ids"].sum())
         rows.append(row)
-    return pd.DataFrame(rows)
+    out = pd.DataFrame(rows)
+    out.attrs["samples"] = all_samples
+    return out
 
 
-def pooled(cells: pd.DataFrame, n_boot: int = 2000, seed: int = 0) -> pd.DataFrame:
-    """Per-model mean over tickers; CI from the ticker-level intervals' half-widths combined as a mean
-    (approximation: ticker cells are independent, so the variance of the mean is the mean variance / k)."""
+def pooled(cells: pd.DataFrame) -> pd.DataFrame:
+    """Per-model mean over tickers. Intervals follow METRICS.md: the ticker-level bootstrap samples are
+    averaged resample by resample and the percentile interval is taken of that average, so the pooled
+    interval holds the set of tickers fixed and reflects run-level resampling only."""
+    samples = cells.attrs.get("samples", {})
     rows = []
     for model, g in cells.groupby("model", sort=True):
         row = {"model": model, "n_tickers": len(g)}
         for k in METRIC_COLS + FV_COLS:
             vals = g[k].astype(float)
             row[k] = float(vals.mean()) if vals.notna().any() else float("nan")
-            half = ((g[k + "_hi"] - g[k + "_lo"]) / 2.0).astype(float)
-            valid = half.notna()
-            if valid.any():
-                se = math.sqrt(float((half[valid] ** 2).sum())) / valid.sum()
-                row[k + "_lo"], row[k + "_hi"] = row[k] - se, row[k] + se
+            arrs = [samples[(model, t)][k] for t in g["ticker"] if (model, t) in samples]
+            if arrs:
+                stacked = np.nanmean(np.vstack(arrs), axis=0)
+                row[k], row[k + "_lo"], row[k + "_hi"] = M.summarize_samples(row[k], stacked)
             else:
                 row[k + "_lo"] = row[k + "_hi"] = float("nan")
         for c in P.CONDITIONS:
@@ -137,15 +146,14 @@ def _fix(s: str) -> str:
 def _fmt(x: float, lo: float, hi: float, digits: int = 2) -> str:
     if x is None or (isinstance(x, float) and math.isnan(x)):
         return "--"
-    s = _fix(("%." + str(digits) + "f") % x)
+    s = _fix(_round_half_up(x, digits))
     if not (math.isnan(lo) or math.isnan(hi)):
-        s += " {\\scriptsize[%s, %s]}" % (_fix(("%." + str(digits) + "f") % lo), _fix(("%." + str(digits) + "f") % hi))
+        s += " {\\scriptsize[%s, %s]}" % (_fix(_round_half_up(lo, digits)), _fix(_round_half_up(hi, digits)))
     return s
 
 
 def write_table1(pooled_df: pd.DataFrame, path: str) -> None:
-    cols = [("N", "$N$"), ("F1", "$F_1$"), ("E1", "$E_1$"), ("E2", "$E_2$"), ("E3", "$E_3$"),
-            ("S1", "$S_1$"), ("S2", "$S_2$")]
+    cols = [("N", "$N$"), ("F1", "$F_1$"), ("E1", "$E_1$"), ("E2", "$E_2$"), ("E3", "$E_3$")]
     lines = ["\\begin{tabular}{@{}l" + "r" * len(cols) + "l@{}}", "\\toprule",
              "Model & " + " & ".join(h for _, h in cols) + " & Diagnosis \\\\", "\\midrule"]
     for _, r in pooled_df.iterrows():
@@ -177,7 +185,7 @@ def write_table_cells(cells: pd.DataFrame, path: str) -> None:
 
 def write_packet_table(path: str) -> None:
     """Appendix long table listing every packet item: id, date, role, source and the first sentence."""
-    lines = ["\\begin{aeslongtable}{@{}p{1.5cm}p{2.0cm}p{2.3cm}p{8.4cm}@{}}{4}",
+    lines = ["\\begin{aeslongtable}{@{}p{1.5cm}p{2.0cm}p{2.7cm}p{8.0cm}@{}}{4}",
              "  {Every evidence item in the four packets. Role: base items appear in every condition; the "
              "true update (C2), false plant (C1) and noise item (C3) appear only in their condition. Items "
              "marked synthetic are counterfactual and were written for this evaluation; they are not factual.}",
@@ -199,7 +207,7 @@ def fig_ratings(df: pd.DataFrame, path: str) -> None:
     matplotlib.rcParams.update({"pdf.fonttype": 42, "font.size": 8, "axes.spines.top": False, "axes.spines.right": False})
     models = sorted(df["model"].unique(), key=lambda m: list(MODEL_LABEL).index(m) if m in MODEL_LABEL else 99)
     tickers = [t for t in P.TICKERS if t in set(df["ticker"])] or sorted(df["ticker"].unique())
-    fig, axes = plt.subplots(len(models), len(tickers), figsize=(6.3, 1.2 * len(models) + 0.5), squeeze=False, sharex=True, sharey=True)
+    fig, axes = plt.subplots(len(models), len(tickers), figsize=(6.3, 1.1 * len(models) + 0.5), squeeze=False, sharex=True, sharey=True)
     width = 0.2
     for i, m in enumerate(models):
         for j, t in enumerate(tickers):
@@ -219,7 +227,7 @@ def fig_ratings(df: pd.DataFrame, path: str) -> None:
             if j == 0:
                 ax.set_ylabel(MODEL_LABEL.get(m, m) + "\nshare of runs", fontsize=8)
             if i == len(models) - 1:
-                ax.set_xlabel("rating (1--5)", fontsize=8)
+                ax.set_xlabel("rating (1\u20135)", fontsize=8)
     handles, labels = axes[0][0].get_legend_handles_labels()
     fig.legend(handles, labels, loc="lower center", ncol=4, frameon=False, bbox_to_anchor=(0.5, -0.02))
     fig.tight_layout(rect=(0, 0.05, 1, 1))
@@ -233,7 +241,7 @@ def fig_excess(pooled_df: pd.DataFrame, path: str) -> None:
     import matplotlib.pyplot as plt
     matplotlib.rcParams.update({"pdf.fonttype": 42, "font.size": 8, "axes.spines.top": False, "axes.spines.right": False})
     models = list(pooled_df["model"])
-    fig, ax = plt.subplots(figsize=(6.3, 2.2))
+    fig, ax = plt.subplots(figsize=(6.3, 2.0))
     x = np.arange(len(models))
     off = {"C1": -0.22, "C2": 0.0, "C3": 0.22}
     for c in ("C1", "C2", "C3"):
@@ -272,10 +280,17 @@ def _macro_name(model: str) -> str:
     return "".join(ch for ch in short if ch.isalpha())
 
 
+def _round_half_up(x: float, digits: int) -> str:
+    """Format with half-up rounding so that 0.475 -> 0.48 regardless of binary representation."""
+    from decimal import Decimal, ROUND_HALF_UP
+    q = Decimal(1).scaleb(-digits)
+    return str(Decimal(repr(float(x))).quantize(q, rounding=ROUND_HALF_UP))
+
+
 def _num(x, digits=2):
     if x is None or (isinstance(x, float) and math.isnan(x)):
         return "--"
-    return _fix(("%." + str(digits) + "f") % x)
+    return _fix(_round_half_up(x, digits))
 
 
 def write_numbers(pooled_df: pd.DataFrame, cells: pd.DataFrame, all_rows: pd.DataFrame, path: str) -> None:
@@ -285,7 +300,8 @@ def write_numbers(pooled_df: pd.DataFrame, cells: pd.DataFrame, all_rows: pd.Dat
              "\\newcommand{\\nValidRuns}{%d}" % int(all_rows["parse_ok"].sum()),
              "\\newcommand{\\nFailedRuns}{%d}" % int((~all_rows["parse_ok"].astype(bool)).sum()),
              "\\newcommand{\\costTotal}{%.2f}" % all_rows["cost_usd"].sum(),
-             "\\newcommand{\\nRetries}{%d}" % int((all_rows["attempts"].fillna(1) - 1).sum())]
+             "\\newcommand{\\nRetries}{%d}" % int((all_rows["attempts"].fillna(1) - 1).sum()),
+             "\\newcommand{\\nUnknownIds}{%d}" % int(cells["n_unknown"].sum())]
     for _, r in pooled_df.iterrows():
         m = _macro_name(r["model"])
         for k in METRIC_COLS + FV_COLS:
@@ -303,7 +319,7 @@ def write_numbers(pooled_df: pd.DataFrame, cells: pd.DataFrame, all_rows: pd.Dat
         lines.append("\\newcommand{\\m%sRuns}{%d}" % (m, int(sum(r["n" + c[1]] for c in P.CONDITIONS))))
     for _, r in cells.iterrows():
         m = _macro_name(r["model"])
-        for k in ("N", "E1", "E2", "E3", "S1", "S2", "V1", "V2", "A1", "A2"):
+        for k in ("N", "E1", "E2", "E3", "S1", "S2", "V1", "V2", "V3", "A1", "A2"):
             idx = {"1": "one", "2": "two", "3": "three"}.get(k[1:], "")
             lines.append("\\newcommand{\\c%s%s%s%s}{%s}" % (m, r["ticker"], k[0] if k != "N" else "Noise", idx, _num(r[k])))
     with open(path, "w") as f:
@@ -335,7 +351,7 @@ def main(argv=None) -> int:
     os.makedirs(args.out, exist_ok=True)
     df = load_runs(args.runs)
     cells = per_cell(df, n_boot=args.n_boot)
-    pooled_df = pooled(cells, n_boot=args.n_boot)
+    pooled_df = pooled(cells)
     cells.to_csv(os.path.join(args.out, "metrics.csv"), index=False)
     pooled_df.to_csv(os.path.join(args.out, "summary.csv"), index=False)
     write_table1(pooled_df, os.path.join(args.out, "table1.tex"))

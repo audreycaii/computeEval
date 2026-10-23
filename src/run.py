@@ -86,7 +86,7 @@ def parse_output(text: str, valid_ids: List[str]) -> Tuple[Optional[Dict], bool,
         return None, False, []
     try:
         rating, conf, drivers = data["rating"], data["confidence"], data["drivers"]
-        if not (isinstance(rating, int) and 1 <= rating <= 5):
+        if not (isinstance(rating, int) and not isinstance(rating, bool) and 1 <= rating <= 5):
             return data, False, []
         if not (isinstance(conf, (int, float)) and 0 <= conf <= 1):
             return data, False, []
@@ -139,6 +139,7 @@ def execute(client, spec: RunSpec, max_attempts: int = 3) -> Dict:
     }
     for attempt in range(1, max_attempts + 1):
         rec["attempts"] = attempt
+        rec["parsed"], rec["parse_ok"], rec["unknown_ids"], rec["raw_text"] = None, False, [], None
         rec["ts"] = time.strftime("%Y-%m-%dT%H:%M:%S%z")
         t0 = time.time()
         try:

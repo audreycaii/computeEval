@@ -17,7 +17,7 @@ def pairwise_disagreement(a: Sequence[int], b: Sequence[int], same: bool = False
             return NAN
         diff = sum(1 for i in range(n) for j in range(i + 1, n) if a[i] != a[j])
         return diff / (n * (n - 1) / 2)
-    if not a or not b:
+    if len(a) * len(b) < 2:
         return NAN
     diff = sum(1 for x in a for y in b if x != y)
     return diff / (len(a) * len(b))
@@ -42,15 +42,16 @@ def cell_metrics(ratings: Dict[str, List[int]], attributed: Dict[str, List[bool]
     return out
 
 
-def bootstrap_cell(ratings: Dict[str, List[int]], attributed: Dict[str, List[bool]], direction: int,
-                   n_boot: int = 2000, seed: int = 0) -> Dict[str, Tuple[float, float, float]]:
-    """Point estimate and percentile 95% interval per metric, resampling runs within each condition."""
+def bootstrap_samples(ratings: Dict[str, List[int]], attributed: Dict[str, List[bool]], direction: int,
+                      n_boot: int = 2000, seed: int = 0) -> Dict[str, np.ndarray]:
+    """Resampled metric values, one array of length n_boot per metric, resampling runs within each
+    condition. NaN where a resample cannot define the metric."""
     point = cell_metrics(ratings, attributed, direction)
     rng = np.random.default_rng(seed)
     keys = [k for k in point if not k.startswith("n")]
-    samples = {k: [] for k in keys}
+    samples = {k: np.full(n_boot, NAN) for k in keys}
     conds = ["C0"] + list(CONDS)
-    for _ in range(n_boot):
+    for b in range(n_boot):
         rr, aa = {}, {}
         for c in conds:
             r = ratings.get(c, [])
@@ -63,15 +64,24 @@ def bootstrap_cell(ratings: Dict[str, List[int]], attributed: Dict[str, List[boo
                 rr[c], aa[c] = [], []
         m = cell_metrics(rr, aa, direction)
         for k in keys:
-            samples[k].append(m[k])
-    out = {}
-    for k in keys:
-        s = np.array([v for v in samples[k] if not math.isnan(v)])
-        if math.isnan(point[k]) or len(s) == 0:
-            out[k] = (point[k], NAN, NAN)
-        else:
-            out[k] = (point[k], float(np.percentile(s, 2.5)), float(np.percentile(s, 97.5)))
-    return out
+            samples[k][b] = m[k]
+    return samples
+
+
+def summarize_samples(point: float, samples: np.ndarray) -> Tuple[float, float, float]:
+    """Point estimate with the percentile 95% interval of its bootstrap samples."""
+    s = samples[~np.isnan(samples)]
+    if math.isnan(point) or len(s) == 0:
+        return (point, NAN, NAN)
+    return (point, float(np.percentile(s, 2.5)), float(np.percentile(s, 97.5)))
+
+
+def bootstrap_cell(ratings: Dict[str, List[int]], attributed: Dict[str, List[bool]], direction: int,
+                   n_boot: int = 2000, seed: int = 0) -> Dict[str, Tuple[float, float, float]]:
+    """Point estimate and percentile 95% interval per metric (see bootstrap_samples)."""
+    point = cell_metrics(ratings, attributed, direction)
+    samples = bootstrap_samples(ratings, attributed, direction, n_boot=n_boot, seed=seed)
+    return {k: summarize_samples(point[k], samples[k]) for k in samples}
 
 
 def diagnosis(E1: float, E2: float, eps: float = 0.05) -> str:

@@ -93,3 +93,46 @@ def test_num_formats_negative_zero_as_zero():
     assert A._num(-0.004) == "0.00"
     assert A._num(-0.006) == "-0.01"
     assert A._fmt(-0.0, -0.0, 0.1).startswith("0.00")
+
+
+def test_pooled_intervals_average_resampled_statistics():
+    import numpy as np
+    df = A.load_runs(FIX)
+    cells = A.per_cell(df, n_boot=60)
+    pooled = A.pooled(cells)
+    row = pooled[pooled.model == "mA"].iloc[0]
+    assert row["N_lo"] >= 0.0 and row["N_hi"] <= 1.0
+    # the interval is the percentile of the mean over tickers of the per-ticker resampled N
+    samples = cells.attrs["samples"]
+    stacked = np.mean([samples[("mA", t)]["N"] for t in ("CRWV", "NBIS")], axis=0)
+    assert row["N_lo"] == float(np.percentile(stacked, 2.5))
+
+
+def test_num_rounds_half_up():
+    assert A._num(0.475) == "0.48"
+    assert A._num(0.4875) == "0.49"
+    assert A._num(0.3375) == "0.34"
+
+
+def test_load_runs_rejects_duplicate_keys(tmp_path):
+    import json
+    import pytest
+    src = open(FIX).read().splitlines()
+    p = tmp_path / "dup.jsonl"
+    p.write_text("\n".join(src + [src[0]]) + "\n")
+    with pytest.raises(ValueError):
+        A.load_runs(str(p))
+
+
+def test_unknown_ids_are_counted(tmp_path):
+    import json
+    rows = [json.loads(l) for l in open(FIX)]
+    rows[0]["unknown_ids"] = ["NBIS-99"]
+    p = tmp_path / "u.jsonl"
+    p.write_text("\n".join(json.dumps(r) for r in rows) + "\n")
+    df = A.load_runs(str(p))
+    cells = A.per_cell(df, n_boot=20)
+    assert int(cells["n_unknown"].sum()) == 1
+    out = str(tmp_path / "numbers.tex")
+    A.write_numbers(A.pooled(cells), cells, A.load_all_rows(str(p)), out)
+    assert "\\newcommand{\\nUnknownIds}{1}" in open(out).read()
