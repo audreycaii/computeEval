@@ -7,3 +7,4 @@ paper/*.log
 paper/*.bbl
 paper/*.blg
 paper/*.out
+.env
