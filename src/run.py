@@ -90,6 +90,9 @@ def parse_output(text: str, valid_ids: List[str]) -> Tuple[Optional[Dict], bool,
             return data, False, []
         if not (isinstance(conf, (int, float)) and 0 <= conf <= 1):
             return data, False, []
+        fv = data.get("fair_value_usd")
+        if not (isinstance(fv, (int, float)) and fv > 0):
+            return data, False, []
         if not (isinstance(drivers, list) and len(drivers) == 3):
             return data, False, []
         unknown = []

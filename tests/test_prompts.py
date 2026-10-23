@@ -11,7 +11,8 @@ def _load_schema():
 
 def test_schema_shape():
     s = _load_schema()
-    assert set(s["required"]) == {"rating", "confidence", "drivers", "rationale"}
+    assert set(s["required"]) == {"rating", "fair_value_usd", "confidence", "drivers", "rationale"}
+    assert s["properties"]["fair_value_usd"]["type"] == "number"
     assert s["additionalProperties"] is False
     assert s["properties"]["rating"]["minimum"] == 1
     assert s["properties"]["rating"]["maximum"] == 5

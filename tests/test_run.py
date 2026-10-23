@@ -8,10 +8,10 @@ from src import run as R
 from src.pricing import cost_usd
 
 
-def _valid_output(rating=4, drivers=None, confidence=0.7):
+def _valid_output(rating=4, drivers=None, confidence=0.7, fair_value=210.0):
     if drivers is None:
         drivers = [{"claim": "c%d" % i, "evidence_ids": ["NBIS-04"]} for i in range(3)]
-    return json.dumps({"rating": rating, "confidence": confidence, "drivers": drivers, "rationale": "r"})
+    return json.dumps({"rating": rating, "fair_value_usd": fair_value, "confidence": confidence, "drivers": drivers, "rationale": "r"})
 
 
 class FakeMessages:
@@ -44,8 +44,10 @@ def test_parse_rejects_out_of_range():
     assert R.parse_output(_valid_output(drivers=two), ids)[1] is False
     assert R.parse_output(_valid_output(confidence=1.2), ids)[1] is False
     assert R.parse_output("not json", ids)[1] is False
+    assert R.parse_output(_valid_output(fair_value=0), ids)[1] is False
+    assert R.parse_output(_valid_output(fair_value=-5), ids)[1] is False
     parsed, ok, unknown = R.parse_output(_valid_output(), ids)
-    assert ok is True and parsed["rating"] == 4 and unknown == []
+    assert ok is True and parsed["rating"] == 4 and parsed["fair_value_usd"] == 210.0 and unknown == []
 
 
 def test_parse_flags_unknown_ids():

@@ -80,7 +80,7 @@
       "source_type": "analyst research",
       "source": "Foreign Policy Journal (secondary coverage)",
       "url": "https://www.foreignpolicyjournal.com/2026/09/29/nebius-nasdaq-nbis-hikes-ai-compute-prices-by-up-to-21-signaling-deepening-gpu-supply-crunch/",
-      "text": "Nebius's on-demand H100 price rose from $2.95 per GPU-hour in May 2026 to $3.85 by September 2026, its first 2026 increase. At about $243 a share in late September, the stock traded at over 20 times the midpoint of 2026 revenue guidance, with a market capitalisation above $65 billion by the outlet's estimate.",
+      "text": "Nebius's on-demand H100 price rose from $2.95 per GPU-hour in May 2026 to $3.85 by September 2026, its first 2026 increase. The outlet describes the move as a signal of a deepening GPU supply crunch.",
       "role": "base",
       "synthetic": false
     },
@@ -90,7 +90,7 @@
       "source_type": "market data",
       "source": "Yahoo Finance historical prices (accessed 2026-10-23)",
       "url": "https://finance.yahoo.com/quote/NBIS/history/",
-      "text": "Closing share price on September 30, 2026: $235.88. Shares outstanding about 220 million, implying an approximate market capitalisation of about $52 billion.",
+      "text": "Closing share price on September 30, 2026: $235.88. Shares outstanding about 220 million (per Yahoo Finance), implying an approximate market capitalisation of about $52 billion.",
       "role": "base",
       "synthetic": false
     },
