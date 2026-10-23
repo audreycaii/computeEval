@@ -86,3 +86,10 @@ def test_numbers_tex_macro_names_have_no_digits(tmp_path):
     A.write_numbers(A.pooled(cells), cells, A.load_all_rows(FIX), path)
     names = re.findall(r"\\newcommand\{\\([^}]+)\}", open(path).read())
     assert names and all(n.isalpha() for n in names), [n for n in names if not n.isalpha()][:5]
+
+
+def test_num_formats_negative_zero_as_zero():
+    assert A._num(-0.0) == "0.00"
+    assert A._num(-0.004) == "0.00"
+    assert A._num(-0.006) == "-0.01"
+    assert A._fmt(-0.0, -0.0, 0.1).startswith("0.00")

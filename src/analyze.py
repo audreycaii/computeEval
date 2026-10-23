@@ -129,12 +129,17 @@ def pooled(cells: pd.DataFrame, n_boot: int = 2000, seed: int = 0) -> pd.DataFra
     return pd.DataFrame(rows)
 
 
+def _fix(s: str) -> str:
+    """Avoid a signed zero such as -0.00 in tables."""
+    return "0.00" if s == "-0.00" else ("0.0" if s == "-0.0" else s)
+
+
 def _fmt(x: float, lo: float, hi: float, digits: int = 2) -> str:
     if x is None or (isinstance(x, float) and math.isnan(x)):
         return "--"
-    s = ("%." + str(digits) + "f") % x
+    s = _fix(("%." + str(digits) + "f") % x)
     if not (math.isnan(lo) or math.isnan(hi)):
-        s += " {\\scriptsize[%s, %s]}" % (("%." + str(digits) + "f") % lo, ("%." + str(digits) + "f") % hi)
+        s += " {\\scriptsize[%s, %s]}" % (_fix(("%." + str(digits) + "f") % lo), _fix(("%." + str(digits) + "f") % hi))
     return s
 
 
@@ -268,7 +273,9 @@ def _macro_name(model: str) -> str:
 
 
 def _num(x, digits=2):
-    return "--" if x is None or (isinstance(x, float) and math.isnan(x)) else ("%." + str(digits) + "f") % x
+    if x is None or (isinstance(x, float) and math.isnan(x)):
+        return "--"
+    return _fix(("%." + str(digits) + "f") % x)
 
 
 def write_numbers(pooled_df: pd.DataFrame, cells: pd.DataFrame, all_rows: pd.DataFrame, path: str) -> None:
