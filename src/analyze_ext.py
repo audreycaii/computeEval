@@ -189,7 +189,7 @@ def write_provenance_table(prov_pooled: pd.DataFrame, main_pooled: pd.DataFrame,
         mp = main_pooled[main_pooled.model == model].iloc[0]
         vals = [A._fmt(mp["E1"], mp["E1_lo"], mp["E1_hi"])]
         for st in STYLES:
-            r = prov_pooled[(prov_pooled.model == model) & (prov_pooled.style == st)]
+            r = prov_pooled[(prov_pooled["model"] == model) & (prov_pooled["style"] == st)]
             vals.append(A._fmt(r.iloc[0]["E1"], r.iloc[0]["E1_lo"], r.iloc[0]["E1_hi"]) if not r.empty else "--")
         lines.append("%s & %s \\\\" % (A.MODEL_LABEL.get(model, model), " & ".join(vals)))
     lines += ["\\bottomrule", "\\end{tabular}"]
@@ -203,7 +203,7 @@ def fig_effort(effort_df: pd.DataFrame, path: str) -> None:
     import matplotlib.pyplot as plt
     matplotlib.rcParams.update({"pdf.fonttype": 42, "font.size": 8, "axes.spines.top": False, "axes.spines.right": False})
     models = [m for m in A.MODEL_LABEL if m in set(effort_df["model"])]
-    fig, axes = plt.subplots(1, 4, figsize=(6.3, 1.9), sharey=True)
+    fig, axes = plt.subplots(1, 4, figsize=(6.3, 1.7), sharey=True)
     for ax, (k, title) in zip(axes, (("N", "noise floor $N$"), ("E1", "$E_1$ false plant"), ("E2", "$E_2$ true update"), ("E3", "$E_3$ immaterial"))):
         x = np.arange(len(models))
         for j, (effort, marker, fill) in enumerate((("medium", "o", "full"), ("high", "s", "none"))):
@@ -231,14 +231,14 @@ def fig_repeats(rep: pd.DataFrame, path: str) -> None:
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
     matplotlib.rcParams.update({"pdf.fonttype": 42, "font.size": 8, "axes.spines.top": False, "axes.spines.right": False})
-    fig, ax = plt.subplots(figsize=(3.0, 1.9))
+    fig, ax = plt.subplots(figsize=(3.0, 1.7))
     colors = {"claude-opus-5-5": A.PALETTE["C0"], "claude-sonnet-5-5": A.PALETTE["C2"], "claude-haiku-5-5": A.PALETTE["C1"]}
     for model, g in rep.groupby("model"):
         g = g[g.n >= 2].sort_values("n")
         ax.plot(g["n"], g["E1_halfwidth"], marker="o", markersize=4, linewidth=1.2, color=colors.get(model, "#444444"),
                 label=A.MODEL_LABEL.get(model, model))
     ax.set_xlabel("repeats per condition")
-    ax.set_ylabel("half-width of 95% interval on $E_1$")
+    ax.set_ylabel("95% half-width on $E_1$")
     ax.set_xticks([3, 5, 10, 20])
     ax.grid(axis="y", color="#dddddd", linewidth=0.5)
     ax.set_axisbelow(True)

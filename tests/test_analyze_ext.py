@@ -73,3 +73,15 @@ def test_write_ext_numbers_macros(tmp_path):
     import re
     names = re.findall(r"\\newcommand\{\\([^}]+)\}", tex)
     assert all(n.isalpha() for n in names)
+
+
+def test_provenance_table_fills_every_style(tmp_path):
+    rows = [r for r in _rows() if r["condition"] == "C1"]
+    files = {s: _write(tmp_path, s + ".jsonl", [dict(r, plant_style=s) for r in rows]) for s in ("filing", "wire", "forum")}
+    cells, pooled = X.provenance(FIX, files, n_boot=20)
+    main_pooled = A.pooled(A.per_cell(A.load_runs(FIX), n_boot=20))
+    path = str(tmp_path / "prov.tex")
+    X.write_provenance_table(pooled, main_pooled, path)
+    tex = open(path).read()
+    assert "--" not in tex.replace("\\\\", "")
+    assert tex.count("\\\\") >= 3
