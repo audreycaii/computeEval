@@ -1,0 +1,73 @@
+# Noise-Calibrated Conclusion Robustness
+
+Code, data and manuscript for *Noise-Calibrated Conclusion Robustness: Separating
+Manipulation from Variance in Financial Research Agents* (Agent Evaluation Science Fall 2026,
+Diagnose track). The experiment measures how a single-call research agent's valuation verdict
+moves when one evidence item is added, against a noise floor from repeated clean runs and a
+matched true-update control.
+
+**Synthetic-content notice.** `packets/*.json` and the paper's Appendix C contain synthetic
+counterfactual items (`"synthetic": true`, roles `false_plant` and `noise`). They were written
+for this evaluation and are not factual. Nothing in this repository is investment advice.
+
+## Layout
+
+| Path | What it holds |
+|---|---|
+| `METRICS.md` | Pre-registered metric definitions, committed before the pilot and unchanged since |
+| `packets/<TICKER>.json` | Evidence items per ticker with role tags and sources (as of 2026-10-01) |
+| `prompts/` | System prompt, question template, output JSON schema |
+| `src/packets.py` | Renders a packet for a condition; deterministic, hashed |
+| `src/run.py` | Resumable driver: one Claude API call per run, one JSONL line per run |
+| `src/metrics.py` | Pairwise disagreement, noise floor, excess flip, shift, attribution, bootstrap |
+| `src/analyze.py` | CSV tables, LaTeX table and number macros, figures |
+| `runs/pilot*.jsonl`, `runs/runs.jsonl` | Raw run logs (pilot rounds, full run) with token usage and cost |
+| `results/` | Generated: `metrics.csv`, `summary.csv`, `table1.tex`, `tableA.tex`, `numbers.tex`, figures, `cost.txt` |
+| `paper/` | AES LaTeX template, `main.tex`, `references.bib`, `build.sh`, `main.pdf` |
+| `docs/` | Design spec, implementation plan, pilot notes |
+
+## Reproduce
+
+Python 3.9+ with `numpy`, `pandas`, `scipy` and `pip install -r requirements.txt`
+(`anthropic==0.125.0`, `matplotlib`, `jsonschema`, `pytest`). Put an API key in `.env` as
+`ANTHROPIC_API_KEY=...` (the file is gitignored).
+
+```sh
+python3 -m pytest -q                                   # unit tests, no API calls
+python3 -m src.run --dry-run                           # print the first prompt
+python3 -m src.run --models claude-sonnet-5-5 --tickers NBIS --repeats 3 --out runs/pilot.jsonl
+python3 -m src.run --repeats 20 --out runs/runs.jsonl --concurrency 6   # full run, resumable
+python3 -m src.analyze --runs runs/runs.jsonl --out results --cutoffs    # tables, figures, macros
+sh paper/build.sh                                      # needs tools/tectonic (see below)
+```
+
+The driver skips (model, ticker, condition, repeat) cells already present in the output file,
+so an interrupted run resumes by re-running the same command. Runs that fail three times
+(refusal, output-token cap, schema-invalid JSON) are logged with `parse_ok: false`, never
+dropped or fabricated.
+
+Models: `claude-opus-5-5`, `claude-sonnet-5-5`, `claude-haiku-5-5`, called with structured
+JSON output and `effort = medium`; these models accept no `temperature`. Queried 2026-10-23.
+
+## Data notes
+
+- Price anchors are the September 30, 2026 closes from the Yahoo Finance chart API; shares
+  outstanding are Yahoo's figures on 2026-10-23, so market capitalisations are approximate.
+- Dates known only to the month are stored as `YYYY-MM`.
+- The JSON schema sent to the API omits `minimum`/`maximum`/`minItems`/`maxItems`, which the
+  structured-output API rejects; those constraints are checked locally in `src/run.py`.
+- `fair_value_usd` was added to the output after pilot round 2 (see `docs/pilot-notes.md`) and
+  is reported as exploratory.
+
+## Building the paper
+
+The AES template needs XeLaTeX. This repository uses the standalone
+[Tectonic](https://github.com/tectonic-typesetting/tectonic) binary placed at `tools/tectonic`
+(gitignored; v0.17.0 was used). `paper/aes.sty` differs from the upstream template in one
+place: two `\PackageError` calls in its nameref patch are `\PackageWarning`, because Tectonic
+ships a nameref version the patch does not match; only PDF bookmark anchor placement is
+affected.
+
+## Cost
+
+See `results/cost.txt` for the total and per-model API spend of the logged runs.
