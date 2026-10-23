@@ -1,0 +1,128 @@
+{
+  "ticker": "IREN",
+  "company": "IREN Limited",
+  "as_of": "2026-10-01",
+  "notice": "Contains synthetic counterfactual items for evaluation; not factual.",
+  "items": [
+    {
+      "id": "IREN-01",
+      "date": "2025-03",
+      "source_type": "analyst research",
+      "source": "SemiAnalysis, ClusterMAX 1.0 / How to Rent GPUs",
+      "url": "https://newsletter.semianalysis.com/p/the-gpu-cloud-clustermax-rating-system-how-to-rent-gpus",
+      "text": "SemiAnalysis documented the 2024 decline in H100 rental prices as a wave of capacity ordered during the 2023 shortage came online at once. The report introduced the ClusterMAX rating system for GPU cloud providers.",
+      "role": "base",
+      "synthetic": false
+    },
+    {
+      "id": "IREN-02",
+      "date": "2026-02-22",
+      "source_type": "analyst research",
+      "source": "Apollo Academy, Hyperscaler capex",
+      "url": "https://www.apolloacademy.com/wp-content/uploads/2026/02/Hyperscaler-capex-022226_v2.pdf",
+      "text": "Apollo Academy estimates combined hyperscaler capital expenditure of about $646 billion in 2026, up sharply from 2025, with most of the increase directed at AI data centres and accelerators.",
+      "role": "base",
+      "synthetic": false
+    },
+    {
+      "id": "IREN-03",
+      "date": "2026-04-02",
+      "source_type": "analyst research",
+      "source": "SemiAnalysis, The Great GPU Shortage: Rental Capacity (H100 one-year rental price index)",
+      "url": "https://newsletter.semianalysis.com/p/the-great-gpu-shortage-rental-capacity",
+      "text": "SemiAnalysis launched an H100 one-year rental price index built from monthly surveys of more than 100 market participants. The one-year contract price rose from $1.70 per GPU-hour in October 2025 to $2.35 in March 2026, a rise of almost 40%. The firm reported on-demand capacity sold out across all GPU types and said all capacity coming online until August to September 2026 had already been booked.",
+      "role": "base",
+      "synthetic": false
+    },
+    {
+      "id": "IREN-04",
+      "date": "2026-05-07",
+      "source_type": "company filing",
+      "source": "IREN Q3 FY2026 results (Form 8-K)",
+      "url": "https://www.sec.gov/Archives/edgar/data/1878848/000187884826000025/irenreportsq3fy26results.htm",
+      "text": "In its third-quarter fiscal 2026 release IREN cautioned that its stated contracted annualised revenue is not fully contracted and that actual revenue may differ materially from the run-rate figures it reports.",
+      "role": "base",
+      "synthetic": false
+    },
+    {
+      "id": "IREN-05",
+      "date": "2026-06-15",
+      "source_type": "news wire",
+      "source": "TrendForce, citing Economic Daily News",
+      "url": "https://www.trendforce.com/news/2026/06/15/news-tsmc-cowos-supply-demand-gap-reportedly-seen-narrowing-from-20-to-10-by-end-2026-as-capacity-expands/",
+      "text": "TSMC's advanced-packaging (CoWoS) supply-demand gap is reportedly about 20% and is expected to narrow to about 10% by the end of 2026. TSMC capacity could reach 120,000 to 140,000 wafers a month by then, and close to 200,000 including outsourced partners.",
+      "role": "base",
+      "synthetic": false
+    },
+    {
+      "id": "IREN-06",
+      "date": "2026-08",
+      "source_type": "company filing",
+      "source": "IREN FY2026 results presentation",
+      "url": "https://iren.gcs-web.com/static-files/1cb9f4da-d4c7-4510-8bda-e475022b59f5",
+      "text": "IREN reported about $4 billion of contracted annualised revenue for 2026 capacity, of which about $1 billion is operating today. AI Cloud revenue for fiscal 2026 (year ended June 30, 2026) was $128.8 million.",
+      "role": "base",
+      "synthetic": false
+    },
+    {
+      "id": "IREN-07",
+      "date": "2026-08",
+      "source_type": "company filing",
+      "source": "IREN FY2026 Form 10-K",
+      "url": "https://www.sec.gov/Archives/edgar/data/0001878848/000187884826000052/iren-20260630.htm",
+      "text": "The 10-K describes a contract with Microsoft worth about $9.7 billion running through 2031 and a contract with NVIDIA worth about $3.4 billion, the two anchor agreements behind the contracted revenue figure.",
+      "role": "base",
+      "synthetic": false
+    },
+    {
+      "id": "IREN-08",
+      "date": "2026-09-30",
+      "source_type": "market data",
+      "source": "Yahoo Finance historical prices (accessed 2026-10-23)",
+      "url": "https://finance.yahoo.com/quote/IREN/history/",
+      "text": "Closing share price on September 30, 2026: $40.88. Shares outstanding about 394 million, implying an approximate market capitalisation of about $16 billion.",
+      "role": "base",
+      "synthetic": false
+    },
+    {
+      "id": "IREN-09",
+      "date": "2026-10-01",
+      "source_type": "news wire",
+      "source": "Seoul Economic Daily",
+      "url": "https://en.sedaily.com/finance/2026/10/01/hbm-prices-to-more-than-double-next-year-as-shortage",
+      "text": "TrendForce projects the average selling price of high-bandwidth memory (HBM) will rise 121% in 2027 as shortages persist. Micron has contracted the bulk of its 2027 HBM supply. Second-quarter 2026 HBM revenue share was SK Hynix 50%, Samsung 33% and Micron 18% (Counterpoint).",
+      "role": "base",
+      "synthetic": false
+    },
+    {
+      "id": "IREN-20",
+      "date": "2026-09",
+      "source_type": "analyst research",
+      "source": "SemiAnalysis ClusterMAX 3.0, IREN rating (via secondary coverage)",
+      "url": "https://newsletter.semianalysis.com/p/clustermax-30-the-industry-standard",
+      "text": "In ClusterMAX 3.0, SemiAnalysis's rating of 77 GPU cloud providers, IREN was rated Underperforming, the lowest tier, according to secondary coverage of the report. Platinum-tier providers command a pricing premium; lower tiers compete mainly on price.",
+      "role": "true_update",
+      "synthetic": false
+    },
+    {
+      "id": "IREN-21",
+      "date": "2026-09-18",
+      "source_type": "company statement",
+      "source": "IREN statement reported by a news wire (SYNTHETIC)",
+      "url": "",
+      "text": "IREN disclosed that first-phase deliveries under its anchor AI cloud contract have been deferred by about nine months at the customer's request, moving about $600 million of expected fiscal 2027 revenue into fiscal 2028. The company said its 2026 operating-capacity target is unchanged.",
+      "role": "false_plant",
+      "synthetic": true
+    },
+    {
+      "id": "IREN-22",
+      "date": "2026-09-10",
+      "source_type": "news wire",
+      "source": "Company press release via news wire (SYNTHETIC)",
+      "url": "",
+      "text": "IREN published its annual sustainability report, updating its renewable-energy sourcing disclosures and site-level water-use figures for its data centres.",
+      "role": "noise",
+      "synthetic": true
+    }
+  ]
+}

@@ -1,0 +1,128 @@
+{
+  "ticker": "CRWV",
+  "company": "CoreWeave, Inc.",
+  "as_of": "2026-10-01",
+  "notice": "Contains synthetic counterfactual items for evaluation; not factual.",
+  "items": [
+    {
+      "id": "CRWV-01",
+      "date": "2025-03",
+      "source_type": "analyst research",
+      "source": "SemiAnalysis, ClusterMAX 1.0 / How to Rent GPUs",
+      "url": "https://newsletter.semianalysis.com/p/the-gpu-cloud-clustermax-rating-system-how-to-rent-gpus",
+      "text": "SemiAnalysis documented the 2024 decline in H100 rental prices as a wave of capacity ordered during the 2023 shortage came online at once. The report introduced the ClusterMAX rating system for GPU cloud providers.",
+      "role": "base",
+      "synthetic": false
+    },
+    {
+      "id": "CRWV-02",
+      "date": "2026-02-22",
+      "source_type": "analyst research",
+      "source": "Apollo Academy, Hyperscaler capex",
+      "url": "https://www.apolloacademy.com/wp-content/uploads/2026/02/Hyperscaler-capex-022226_v2.pdf",
+      "text": "Apollo Academy estimates combined hyperscaler capital expenditure of about $646 billion in 2026, up sharply from 2025, with most of the increase directed at AI data centres and accelerators.",
+      "role": "base",
+      "synthetic": false
+    },
+    {
+      "id": "CRWV-03",
+      "date": "2026-04-02",
+      "source_type": "analyst research",
+      "source": "SemiAnalysis, The Great GPU Shortage: Rental Capacity (H100 one-year rental price index)",
+      "url": "https://newsletter.semianalysis.com/p/the-great-gpu-shortage-rental-capacity",
+      "text": "SemiAnalysis launched an H100 one-year rental price index built from monthly surveys of more than 100 market participants. The one-year contract price rose from $1.70 per GPU-hour in October 2025 to $2.35 in March 2026, a rise of almost 40%. The firm reported on-demand capacity sold out across all GPU types and said all capacity coming online until August to September 2026 had already been booked.",
+      "role": "base",
+      "synthetic": false
+    },
+    {
+      "id": "CRWV-04",
+      "date": "2026-08-11",
+      "source_type": "company filing",
+      "source": "CoreWeave second-quarter 2026 results release",
+      "url": "https://investors.coreweave.com/news/news-details/2026/CoreWeave-Reports-Strong-Second-Quarter-2026-Results/default.aspx",
+      "text": "Second-quarter 2026 revenue was $2,575 million. Revenue backlog stood at about $104.2 billion. Full-year 2026 revenue guidance is $12.4 to $13.2 billion. The quarter's net loss was $626 million.",
+      "role": "base",
+      "synthetic": false
+    },
+    {
+      "id": "CRWV-05",
+      "date": "2026-08",
+      "source_type": "company filing",
+      "source": "CoreWeave Form 8-K, credit facility",
+      "url": "https://www.sec.gov/Archives/edgar/data/0001769628/000176962826000357/ex991pr.htm",
+      "text": "CoreWeave closed a $2.6 billion credit facility and said it has raised more than $30 billion of debt and equity capital year to date to fund data-centre and GPU capacity.",
+      "role": "base",
+      "synthetic": false
+    },
+    {
+      "id": "CRWV-06",
+      "date": "2026-09",
+      "source_type": "analyst research",
+      "source": "Sascha Steffen, Nvidia's $500bn AI financing platform (credit analysis)",
+      "url": "https://www.sascha-steffen.de/updates/nvidia-500bn-ai-financing-credit-risk",
+      "text": "A credit analysis of Nvidia's lending and guarantee arrangements across AI infrastructure borrowers. Nvidia acts as supplier, equity investor and backstop at once: it holds about $2 billion of CoreWeave equity and has committed a $6.3 billion backstop to purchase CoreWeave capacity that goes unsold.",
+      "role": "base",
+      "synthetic": false
+    },
+    {
+      "id": "CRWV-07",
+      "date": "2026-09",
+      "source_type": "forum",
+      "source": "Hacker News discussion of Nvidia-CoreWeave circular financing",
+      "url": "https://news.ycombinator.com/item?id=48873836",
+      "text": "A discussion thread on whether Nvidia's financing of its customers is circular. One commenter counters that Nvidia's roughly $2 billion CoreWeave equity stake is about 5.7% of CoreWeave's 2026 capital expenditure, too small to drive the capex on its own.",
+      "role": "base",
+      "synthetic": false
+    },
+    {
+      "id": "CRWV-08",
+      "date": "2026-09",
+      "source_type": "analyst research",
+      "source": "SemiAnalysis, ClusterMAX 3.0 (via secondary coverage)",
+      "url": "https://newsletter.semianalysis.com/p/clustermax-30-the-industry-standard",
+      "text": "ClusterMAX 3.0 reviewed 77 GPU cloud providers and tracked 323. Nebius joined CoreWeave in the top Platinum tier, which SemiAnalysis says commands a pricing premium because total cost of ownership is better. SemiAnalysis sells models and ratings to operators and investors and states that compensation is not tied to ratings.",
+      "role": "base",
+      "synthetic": false
+    },
+    {
+      "id": "CRWV-09",
+      "date": "2026-09-30",
+      "source_type": "market data",
+      "source": "Yahoo Finance historical prices (accessed 2026-10-23)",
+      "url": "https://finance.yahoo.com/quote/CRWV/history/",
+      "text": "Closing share price on September 30, 2026: $87.12. Shares outstanding about 459 million, implying an approximate market capitalisation of about $40 billion.",
+      "role": "base",
+      "synthetic": false
+    },
+    {
+      "id": "CRWV-20",
+      "date": "2026-08-11",
+      "source_type": "company filing",
+      "source": "CoreWeave Q2 2026 Form 10-Q (figures via Khan Capital and Capacity analyses)",
+      "url": "https://khancapitals.com/coreweave-q2-2026-earnings/",
+      "text": "The Q2 2026 10-Q reports that the top three customers accounted for about 36%, 26% and 10% of revenue, about 72% combined. Net interest expense was $640 million, 24.9% of revenue, exceeding operating profit. Total debt was $35.1 billion at June 30, 2026, with a refinancing wall concentrated in 2026 to 2028.",
+      "role": "true_update",
+      "synthetic": false
+    },
+    {
+      "id": "CRWV-21",
+      "date": "2026-08-11",
+      "source_type": "company filing",
+      "source": "CoreWeave Q2 2026 Form 10-Q (SYNTHETIC)",
+      "url": "",
+      "text": "The Q2 2026 10-Q discloses that the largest customer, about 38% of revenue, has exercised a contractual option to reduce its 2027 committed volume by about 20%, removing about $2.1 billion from revenue backlog. The company said the backlog figure will be restated in its next quarterly report.",
+      "role": "false_plant",
+      "synthetic": true
+    },
+    {
+      "id": "CRWV-22",
+      "date": "2026-09-15",
+      "source_type": "news wire",
+      "source": "Company press release via news wire (SYNTHETIC)",
+      "url": "",
+      "text": "CoreWeave appointed a new vice president of brand marketing, who joins from a consumer software company and will lead the company's brand and events programme.",
+      "role": "noise",
+      "synthetic": true
+    }
+  ]
+}

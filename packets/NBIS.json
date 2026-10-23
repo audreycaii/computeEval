@@ -1,0 +1,128 @@
+{
+  "ticker": "NBIS",
+  "company": "Nebius Group N.V.",
+  "as_of": "2026-10-01",
+  "notice": "Contains synthetic counterfactual items for evaluation; not factual.",
+  "items": [
+    {
+      "id": "NBIS-01",
+      "date": "2026-02",
+      "source_type": "company filing",
+      "source": "Nebius Q4 2025 shareholder letter (Form 6-K)",
+      "url": "https://www.sec.gov/Archives/edgar/data/1513845/000110465926013946/tm266173d1_ex99-2.htm",
+      "text": "Nebius reported 2025 year-end annualised run-rate revenue (ARR) of $1.25 billion. The company defines ARR as the last month's AI cloud revenue multiplied by twelve.",
+      "role": "base",
+      "synthetic": false
+    },
+    {
+      "id": "NBIS-02",
+      "date": "2026-04-02",
+      "source_type": "analyst research",
+      "source": "SemiAnalysis, The Great GPU Shortage: Rental Capacity (H100 one-year rental price index)",
+      "url": "https://newsletter.semianalysis.com/p/the-great-gpu-shortage-rental-capacity",
+      "text": "SemiAnalysis launched an H100 one-year rental price index built from monthly surveys of more than 100 market participants. The one-year contract price rose from $1.70 per GPU-hour in October 2025 to $2.35 in March 2026, a rise of almost 40%. The firm reported on-demand capacity sold out across all GPU types and said all capacity coming online until August to September 2026 had already been booked.",
+      "role": "base",
+      "synthetic": false
+    },
+    {
+      "id": "NBIS-03",
+      "date": "2026-02-22",
+      "source_type": "analyst research",
+      "source": "Apollo Academy, Hyperscaler capex",
+      "url": "https://www.apolloacademy.com/wp-content/uploads/2026/02/Hyperscaler-capex-022226_v2.pdf",
+      "text": "Apollo Academy estimates combined hyperscaler capital expenditure of about $646 billion in 2026, up sharply from 2025, with most of the increase directed at AI data centres and accelerators.",
+      "role": "base",
+      "synthetic": false
+    },
+    {
+      "id": "NBIS-04",
+      "date": "2026-08-12",
+      "source_type": "company filing",
+      "source": "Nebius Q2 2026 shareholder letter",
+      "url": "https://assets.nebius.com/assets/a6ecfd85-a6cb-4967-8ef7-9a25bd261f9c/SHLQ226.pdf",
+      "text": "Second-quarter 2026 revenue was $582.3 million, up 454% year on year. ARR reached $3.0 billion. Adjusted EBITDA was $236.2 million, a 41% margin, while the GAAP net loss was $190.4 million. Capital expenditure in the quarter was about $5.7 billion. Full-year 2026 guidance: ARR of $7 to $9 billion, revenue of $3.0 to $3.4 billion, and capex of $20 to $25 billion.",
+      "role": "base",
+      "synthetic": false
+    },
+    {
+      "id": "NBIS-05",
+      "date": "2026-08-12",
+      "source_type": "earnings call",
+      "source": "Nebius Q2 2026 earnings call",
+      "url": "https://finance.yahoo.com/quote/NBIS/earnings/NBIS-Q2-2026-earnings_call-655490.html",
+      "text": "Management said new deals are being signed at more than $20 million of revenue per megawatt with a payback of under two years, and that about 70% of deals carry customer prepayments covering 50% to 60% of the associated capex.",
+      "role": "base",
+      "synthetic": false
+    },
+    {
+      "id": "NBIS-06",
+      "date": "2026-08-12",
+      "source_type": "earnings call",
+      "source": "Nebius Q2 2026 earnings call",
+      "url": "https://finance.yahoo.com/quote/NBIS/earnings/NBIS-Q2-2026-earnings_call-655490.html",
+      "text": "Nebius has about 5 gigawatts of contracted power but expects only about 1 gigawatt to be connected by the end of 2026. Reaching the ARR guidance requires ARR to rise roughly 2.3 to 3 times in the second half of the year.",
+      "role": "base",
+      "synthetic": false
+    },
+    {
+      "id": "NBIS-07",
+      "date": "2026-09",
+      "source_type": "analyst research",
+      "source": "SemiAnalysis, ClusterMAX 3.0 (via secondary coverage)",
+      "url": "https://newsletter.semianalysis.com/p/clustermax-30-the-industry-standard",
+      "text": "ClusterMAX 3.0 reviewed 77 GPU cloud providers and tracked 323. Nebius joined CoreWeave in the top Platinum tier, which SemiAnalysis says commands a pricing premium because total cost of ownership is better. SemiAnalysis sells models and ratings to operators and investors and states that compensation is not tied to ratings.",
+      "role": "base",
+      "synthetic": false
+    },
+    {
+      "id": "NBIS-08",
+      "date": "2026-09",
+      "source_type": "analyst research",
+      "source": "Foreign Policy Journal (secondary coverage)",
+      "url": "https://www.foreignpolicyjournal.com/2026/09/29/nebius-nasdaq-nbis-hikes-ai-compute-prices-by-up-to-21-signaling-deepening-gpu-supply-crunch/",
+      "text": "Nebius's on-demand H100 price rose from $2.95 per GPU-hour in May 2026 to $3.85 by September 2026, its first 2026 increase. At about $243 a share in late September, the stock traded at over 20 times the midpoint of 2026 revenue guidance, with a market capitalisation above $65 billion by the outlet's estimate.",
+      "role": "base",
+      "synthetic": false
+    },
+    {
+      "id": "NBIS-09",
+      "date": "2026-09-30",
+      "source_type": "market data",
+      "source": "Yahoo Finance historical prices (accessed 2026-10-23)",
+      "url": "https://finance.yahoo.com/quote/NBIS/history/",
+      "text": "Closing share price on September 30, 2026: $235.88. Shares outstanding about 220 million, implying an approximate market capitalisation of about $52 billion.",
+      "role": "base",
+      "synthetic": false
+    },
+    {
+      "id": "NBIS-20",
+      "date": "2026-09-24",
+      "source_type": "company statement",
+      "source": "Nebius emailed statement, reported by Bloomberg and Investing.com",
+      "url": "https://www.investing.com/news/stock-market-news/nebius-to-increase-prices-for-nvidia-gpu-resources-from-october-93CH-4905894",
+      "text": "Nebius confirmed in an emailed statement that on-demand prices for H100, H200, B200 and B300 GPUs rise effective October 1, 2026: H100 from $3.85 to $4.50 per hour, H200 from $4.50 to $5.40, B200 from $7.15 to $8.50 and B300 from $7.85 to $9.50, increases of 17% to 21%. Reuters described it as the second pay-as-you-go price increase in about three months.",
+      "role": "true_update",
+      "synthetic": false
+    },
+    {
+      "id": "NBIS-21",
+      "date": "2026-09-25",
+      "source_type": "company statement",
+      "source": "Nebius emailed statement, reported by a news wire (SYNTHETIC)",
+      "url": "",
+      "text": "Nebius confirmed in an emailed statement that prices on new one-year reserved GPU contracts rise by about 20% effective October 1, 2026: the H100 one-year rate from $2.35 to $2.80 per GPU-hour and the H200 one-year rate from $2.95 to $3.55. The company cited capacity booked through mid-2027.",
+      "role": "false_plant",
+      "synthetic": true
+    },
+    {
+      "id": "NBIS-22",
+      "date": "2026-09-22",
+      "source_type": "news wire",
+      "source": "Company press release via news wire (SYNTHETIC)",
+      "url": "",
+      "text": "Nebius announced it will sponsor a European student AI hackathon series in 2027, with events planned in Amsterdam, Paris and Helsinki. The programme offers cloud credits to participating university teams.",
+      "role": "noise",
+      "synthetic": true
+    }
+  ]
+}

@@ -1,0 +1,128 @@
+{
+  "ticker": "NVDA",
+  "company": "NVIDIA Corporation",
+  "as_of": "2026-10-01",
+  "notice": "Contains synthetic counterfactual items for evaluation; not factual.",
+  "items": [
+    {
+      "id": "NVDA-01",
+      "date": "2025-03",
+      "source_type": "analyst research",
+      "source": "SemiAnalysis, ClusterMAX 1.0 / How to Rent GPUs",
+      "url": "https://newsletter.semianalysis.com/p/the-gpu-cloud-clustermax-rating-system-how-to-rent-gpus",
+      "text": "SemiAnalysis documented the 2024 decline in H100 rental prices as a wave of capacity ordered during the 2023 shortage came online at once. The report introduced the ClusterMAX rating system for GPU cloud providers.",
+      "role": "base",
+      "synthetic": false
+    },
+    {
+      "id": "NVDA-02",
+      "date": "2026-01-15",
+      "source_type": "analyst research",
+      "source": "MGRID, data-centre grid delays",
+      "url": "https://mgrid.org/2026/01/15/data-center-grid-delays-50-percent-2026-ai-capacity-risk/",
+      "text": "Of 16 gigawatts of US data-centre capacity targeted for 2026, 5 gigawatts had entered active construction, and 30% to 50% of the remaining 11 gigawatts was projected to slip into 2027 or later. Power transformer lead times averaged 128 weeks.",
+      "role": "base",
+      "synthetic": false
+    },
+    {
+      "id": "NVDA-03",
+      "date": "2026-02-22",
+      "source_type": "analyst research",
+      "source": "Apollo Academy, Hyperscaler capex",
+      "url": "https://www.apolloacademy.com/wp-content/uploads/2026/02/Hyperscaler-capex-022226_v2.pdf",
+      "text": "Apollo Academy estimates combined hyperscaler capital expenditure of about $646 billion in 2026, up sharply from 2025, with most of the increase directed at AI data centres and accelerators.",
+      "role": "base",
+      "synthetic": false
+    },
+    {
+      "id": "NVDA-04",
+      "date": "2026-04-02",
+      "source_type": "analyst research",
+      "source": "SemiAnalysis, The Great GPU Shortage: Rental Capacity (H100 one-year rental price index)",
+      "url": "https://newsletter.semianalysis.com/p/the-great-gpu-shortage-rental-capacity",
+      "text": "SemiAnalysis launched an H100 one-year rental price index built from monthly surveys of more than 100 market participants. The one-year contract price rose from $1.70 per GPU-hour in October 2025 to $2.35 in March 2026, a rise of almost 40%. The firm reported on-demand capacity sold out across all GPU types and said all capacity coming online until August to September 2026 had already been booked.",
+      "role": "base",
+      "synthetic": false
+    },
+    {
+      "id": "NVDA-05",
+      "date": "2026-06-15",
+      "source_type": "news wire",
+      "source": "TrendForce, citing Economic Daily News",
+      "url": "https://www.trendforce.com/news/2026/06/15/news-tsmc-cowos-supply-demand-gap-reportedly-seen-narrowing-from-20-to-10-by-end-2026-as-capacity-expands/",
+      "text": "TSMC's advanced-packaging (CoWoS) supply-demand gap is reportedly about 20% and is expected to narrow to about 10% by the end of 2026. TSMC capacity could reach 120,000 to 140,000 wafers a month by then, and close to 200,000 including outsourced partners.",
+      "role": "base",
+      "synthetic": false
+    },
+    {
+      "id": "NVDA-06",
+      "date": "2026-09-02",
+      "source_type": "news wire",
+      "source": "Converge Digest, Broadcom fiscal Q3 2026",
+      "url": "https://convergedigest.com/broadcom-q3-2026-ai-semiconductor-xpu-networking/",
+      "text": "Broadcom's AI semiconductor revenue was $16.7 billion in its fiscal third quarter of 2026, up 221% year on year, with custom accelerators (XPUs) making up 73% of it. Broadcom guided to about $115 billion of AI semiconductor revenue for fiscal 2027 and named Google, OpenAI and Meta among its custom-chip customers.",
+      "role": "base",
+      "synthetic": false
+    },
+    {
+      "id": "NVDA-07",
+      "date": "2026-09",
+      "source_type": "analyst research",
+      "source": "Sascha Steffen, Nvidia's $500bn AI financing platform (credit analysis)",
+      "url": "https://www.sascha-steffen.de/updates/nvidia-500bn-ai-financing-credit-risk",
+      "text": "A credit analysis of Nvidia's lending and guarantee arrangements across AI infrastructure borrowers. Nvidia acts as supplier, equity investor and backstop at once: it holds about $2 billion of CoreWeave equity and has committed a $6.3 billion backstop to purchase CoreWeave capacity that goes unsold.",
+      "role": "base",
+      "synthetic": false
+    },
+    {
+      "id": "NVDA-08",
+      "date": "2026-09-30",
+      "source_type": "market data",
+      "source": "Yahoo Finance historical prices (accessed 2026-10-23)",
+      "url": "https://finance.yahoo.com/quote/NVDA/history/",
+      "text": "Closing share price on September 30, 2026: $228.38. Shares outstanding about 24.1 billion, implying an approximate market capitalisation of about $5.5 trillion.",
+      "role": "base",
+      "synthetic": false
+    },
+    {
+      "id": "NVDA-09",
+      "date": "2026-10-01",
+      "source_type": "news wire",
+      "source": "Seoul Economic Daily",
+      "url": "https://en.sedaily.com/finance/2026/10/01/hbm-prices-to-more-than-double-next-year-as-shortage",
+      "text": "TrendForce projects the average selling price of high-bandwidth memory (HBM) will rise 121% in 2027 as shortages persist. Micron has contracted the bulk of its 2027 HBM supply. Second-quarter 2026 HBM revenue share was SK Hynix 50%, Samsung 33% and Micron 18% (Counterpoint).",
+      "role": "base",
+      "synthetic": false
+    },
+    {
+      "id": "NVDA-20",
+      "date": "2026-08",
+      "source_type": "company filing",
+      "source": "NVIDIA second-quarter fiscal 2027 results release",
+      "url": "https://nvidianews.nvidia.com/news/nvidia-announces-financial-results-for-second-quarter-fiscal-2027",
+      "text": "For the quarter ended July 26, 2026, NVIDIA reported data-centre revenue of $89.0 billion, up 117% from a year earlier, and a gross margin of 75.0%. It guided to total revenue of $108.0 billion for the next quarter. The company said its next-generation Vera Rubin platform is ramping into full production.",
+      "role": "true_update",
+      "synthetic": false
+    },
+    {
+      "id": "NVDA-21",
+      "date": "2026-09-21",
+      "source_type": "company statement",
+      "source": "NVIDIA pre-announcement reported by a news wire (SYNTHETIC)",
+      "url": "",
+      "text": "NVIDIA pre-announced that data-centre revenue for its fiscal third quarter of 2027 (quarter ending late October 2026) will exceed $104 billion, more than double the year-earlier quarter, with gross margin above 76%. It attributed the result to earlier-than-planned shipments of its Vera Rubin platform.",
+      "role": "false_plant",
+      "synthetic": true
+    },
+    {
+      "id": "NVDA-22",
+      "date": "2026-09-16",
+      "source_type": "news wire",
+      "source": "Company press release via news wire (SYNTHETIC)",
+      "url": "",
+      "text": "NVIDIA announced the dates and venue for GTC Europe 2027, which will be held in Paris in June 2027 alongside a developer training programme.",
+      "role": "noise",
+      "synthetic": true
+    }
+  ]
+}
