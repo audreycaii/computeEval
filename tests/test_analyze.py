@@ -62,3 +62,26 @@ def test_numbers_tex_macros(tmp_path):
     assert "\\newcommand{\\mmAEone}{" in tex  # per-model macros: \m + letters of the model label
     assert "\\newcommand{\\mmADiag}{resistant-responsive}" in tex
     assert "\\newcommand{\\costTotal}{0.48}" in tex
+
+
+def test_appendix_tables(tmp_path):
+    cells = A.per_cell(A.load_runs(FIX), n_boot=50)
+    pa = str(tmp_path / "tableA.tex")
+    A.write_table_cells(cells, pa)
+    tex = open(pa).read()
+    assert "\\toprule" in tex and "NBIS" in tex and "CRWV" in tex and tex.count("\\\\") >= 5
+    pp = str(tmp_path / "packets.tex")
+    A.write_packet_table(pp)
+    tex = open(pp).read()
+    assert "NBIS-20" in tex and "NVDA-22" in tex and "synthetic" in tex.lower()
+    assert "\\begin{aeslongtable}" in tex
+
+
+def test_numbers_tex_macro_names_have_no_digits(tmp_path):
+    import re
+    df = A.load_runs(FIX)
+    cells = A.per_cell(df, n_boot=20)
+    path = str(tmp_path / "numbers.tex")
+    A.write_numbers(A.pooled(cells), cells, A.load_all_rows(FIX), path)
+    names = re.findall(r"\\newcommand\{\\([^}]+)\}", open(path).read())
+    assert names and all(n.isalpha() for n in names), [n for n in names if not n.isalpha()][:5]

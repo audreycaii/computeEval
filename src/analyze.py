@@ -140,13 +140,49 @@ def _fmt(x: float, lo: float, hi: float, digits: int = 2) -> str:
 
 def write_table1(pooled_df: pd.DataFrame, path: str) -> None:
     cols = [("N", "$N$"), ("F1", "$F_1$"), ("E1", "$E_1$"), ("E2", "$E_2$"), ("E3", "$E_3$"),
-            ("S1", "$S_1$"), ("S2", "$S_2$"), ("A1", "$A_1$"), ("A2", "$A_2$")]
+            ("S1", "$S_1$"), ("S2", "$S_2$")]
     lines = ["\\begin{tabular}{@{}l" + "r" * len(cols) + "l@{}}", "\\toprule",
              "Model & " + " & ".join(h for _, h in cols) + " & Diagnosis \\\\", "\\midrule"]
     for _, r in pooled_df.iterrows():
         cells = [_fmt(r[k], r[k + "_lo"], r[k + "_hi"]) for k, _ in cols]
         lines.append("%s & %s & %s \\\\" % (MODEL_LABEL.get(r["model"], r["model"]), " & ".join(cells), r["diagnosis"]))
     lines += ["\\bottomrule", "\\end{tabular}"]
+    with open(path, "w") as f:
+        f.write("\n".join(lines) + "\n")
+
+
+def _tex_escape(t: str) -> str:
+    return t.replace("\\", "/").replace("&", "\\&").replace("%", "\\%").replace("$", "\\$").replace("#", "\\#").replace("_", "\\_")
+
+
+def write_table_cells(cells: pd.DataFrame, path: str) -> None:
+    """Appendix table: one row per model x ticker with the headline metrics and run counts."""
+    cols = ["N", "E1", "E2", "E3", "S1", "S2", "V1", "V2", "A1", "A2"]
+    heads = ["$N$", "$E_1$", "$E_2$", "$E_3$", "$S_1$", "$S_2$", "$V_1$", "$V_2$", "$A_1$", "$A_2$"]
+    lines = ["\\begin{tabular}{@{}llr" + "r" * len(cols) + "@{}}", "\\toprule",
+             "Model & Ticker & $n_0/n_1/n_2/n_3$ & " + " & ".join(heads) + " \\\\", "\\midrule"]
+    for _, r in cells.sort_values(["model", "ticker"]).iterrows():
+        ns = "%d/%d/%d/%d" % (r["n0"], r["n1"], r["n2"], r["n3"])
+        vals = [_num(r[k], 1 if k.startswith("V") else 2) for k in cols]
+        lines.append("%s & %s & %s & %s \\\\" % (MODEL_LABEL.get(r["model"], r["model"]), r["ticker"], ns, " & ".join(vals)))
+    lines += ["\\bottomrule", "\\end{tabular}"]
+    with open(path, "w") as f:
+        f.write("\n".join(lines) + "\n")
+
+
+def write_packet_table(path: str) -> None:
+    """Appendix long table listing every packet item: id, date, role, source and the first sentence."""
+    lines = ["\\begin{aeslongtable}{@{}p{1.5cm}p{2.0cm}p{2.3cm}p{8.4cm}@{}}{4}",
+             "  {Every evidence item in the four packets. Role: base items appear in every condition; the "
+             "true update (C2), false plant (C1) and noise item (C3) appear only in their condition. Items "
+             "marked synthetic are counterfactual and were written for this evaluation; they are not factual.}",
+             "  {tab:packets}", "  {ID & Date & Role & Source and first sentence}"]
+    for t in P.TICKERS:
+        for it in sorted(P.load_packet(t)["items"], key=lambda x: x["id"]):
+            role = it["role"].replace("_", " ") + (" (synthetic)" if it["synthetic"] else "")
+            first = it["text"].split(". ")[0].rstrip(".") + "."
+            lines.append("%s & %s & %s & \\textit{%s.} %s\\\\" % (it["id"], it["date"], role, _tex_escape(it["source"]), _tex_escape(first)))
+    lines.append("\\end{aeslongtable}")
     with open(path, "w") as f:
         f.write("\n".join(lines) + "\n")
 
@@ -253,7 +289,8 @@ def write_numbers(pooled_df: pd.DataFrame, cells: pd.DataFrame, all_rows: pd.Dat
             lines.append("\\newcommand{\\m%s%s%sHi}{%s}" % (m, word, idx, _num(r[k + "_hi"])))
         lines.append("\\newcommand{\\m%sDiag}{%s}" % (m, r["diagnosis"]))
         for c in P.CONDITIONS:
-            lines.append("\\newcommand{\\m%sConf%s}{%s}" % (m, c, _num(r["conf" + c[1]])))
+            word = {"0": "zero", "1": "one", "2": "two", "3": "three"}[c[1]]
+            lines.append("\\newcommand{\\m%sConfC%s}{%s}" % (m, word, _num(r["conf" + c[1]])))
         lines.append("\\newcommand{\\m%sRuns}{%d}" % (m, int(sum(r["n" + c[1]] for c in P.CONDITIONS))))
     for _, r in cells.iterrows():
         m = _macro_name(r["model"])
@@ -297,6 +334,8 @@ def main(argv=None) -> int:
     all_rows = load_all_rows(args.runs)
     write_cost(all_rows, os.path.join(args.out, "cost.txt"))
     write_numbers(pooled_df, cells, all_rows, os.path.join(args.out, "numbers.tex"))
+    write_table_cells(cells, os.path.join(args.out, "tableA.tex"))
+    write_packet_table(os.path.join(args.out, "packets.tex"))
     if args.cutoffs:
         fetch_cutoffs(sorted(df["model"].unique()), os.path.join(args.out, "cutoffs.json"))
     print(pooled_df[["model", "N", "E1", "E2", "E3", "S1", "S2", "V1", "V2", "A1", "A2", "diagnosis"]].to_string(index=False))
