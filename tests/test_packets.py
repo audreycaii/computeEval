@@ -79,3 +79,22 @@ def test_build_prompt_fills_placeholders():
 
 def test_direction_table():
     assert P.DIRECTION == {"NBIS": 1, "CRWV": -1, "IREN": -1, "NVDA": 1}
+
+
+def test_plant_style_changes_only_the_source_label():
+    base_text, _ = P.render("NBIS", "C1")
+    for style in P.PLANT_STYLES:
+        text, sha = P.render("NBIS", "C1", plant_style=style)
+        assert sha != P.render("NBIS", "C1")[1]
+        # the plant's claim text is unchanged; only its (source_type, source) label differs
+        plant = [it for it in P.load_packet("NBIS")["items"] if it["role"] == "false_plant"][0]
+        assert plant["text"] in text
+        assert "SYNTHETIC" in text
+        assert P.PLANT_STYLES[style][0] in text
+    assert P.render("NBIS", "C0", plant_style="forum") == P.render("NBIS", "C0")  # no plant, no effect
+
+
+def test_plant_style_rejects_unknown():
+    import pytest
+    with pytest.raises(KeyError):
+        P.render("NBIS", "C1", plant_style="tv")

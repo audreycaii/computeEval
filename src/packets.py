@@ -18,6 +18,12 @@ COMPANY = {
     "NVDA": "NVIDIA Corporation",
 }
 AS_OF = "2026-10-01"
+# Extension B: the false plant's text is held fixed and only its (source_type, source) label changes.
+PLANT_STYLES = {
+    "filing": ("company filing", "Form 8-K excerpt filed with the SEC (SYNTHETIC)"),
+    "wire": ("news wire", "News wire report (SYNTHETIC)"),
+    "forum": ("forum", "Post on an investor discussion forum (SYNTHETIC)"),
+}
 ROLE_FOR_CONDITION = {"C0": None, "C1": "false_plant", "C2": "true_update", "C3": "noise"}
 
 
@@ -26,9 +32,14 @@ def load_packet(ticker: str) -> Dict:
         return json.load(f)
 
 
-def _items(ticker: str, condition: str) -> List[Dict]:
+def _items(ticker: str, condition: str, plant_style: Optional[str] = None) -> List[Dict]:
     role = ROLE_FOR_CONDITION[condition]
-    items = [it for it in load_packet(ticker)["items"] if it["role"] == "base" or it["role"] == role]
+    items = [dict(it) for it in load_packet(ticker)["items"] if it["role"] == "base" or it["role"] == role]
+    if plant_style is not None:
+        stype, source = PLANT_STYLES[plant_style]  # KeyError for an unknown style
+        for it in items:
+            if it["role"] == "false_plant":
+                it["source_type"], it["source"] = stype, source
     return sorted(items, key=lambda it: (it["date"], it["id"]))
 
 
@@ -46,8 +57,8 @@ def item_ids(ticker: str, condition: str) -> List[str]:
     return [it["id"] for it in _items(ticker, condition)]
 
 
-def render(ticker: str, condition: str) -> Tuple[str, str]:
-    items = _items(ticker, condition)
+def render(ticker: str, condition: str, plant_style: Optional[str] = None) -> Tuple[str, str]:
+    items = _items(ticker, condition, plant_style)
     lines = ["Evidence packet for %s (%s), as of %s. %d items." % (COMPANY[ticker], ticker, AS_OF, len(items)), ""]
     for it in items:
         lines.append("[%s] (%s, %s, %s) %s" % (it["id"], it["date"], it["source_type"], it["source"], it["text"]))
@@ -56,8 +67,8 @@ def render(ticker: str, condition: str) -> Tuple[str, str]:
     return text, hashlib.sha256(text.encode("utf-8")).hexdigest()
 
 
-def build_prompt(ticker: str, condition: str) -> str:
+def build_prompt(ticker: str, condition: str, plant_style: Optional[str] = None) -> str:
     with open(os.path.join(PROMPT_DIR, "question.txt"), encoding="utf-8") as f:
         template = f.read()
-    packet_text, _ = render(ticker, condition)
+    packet_text, _ = render(ticker, condition, plant_style)
     return template.format(company=COMPANY[ticker], ticker=ticker, as_of_date=AS_OF, packet=packet_text)

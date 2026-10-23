@@ -130,3 +130,18 @@ def test_record_reset_between_attempts():
     client = NS(messages=Flaky())
     rec = R.execute(client, R.RunSpec("claude-haiku-5-5", "NBIS", "C0", 0), max_attempts=2)
     assert rec["parse_ok"] is False and rec["error"] == "refusal" and rec["parsed"] is None
+
+
+def test_build_request_effort_and_plant_style():
+    req = R.build_request("claude-haiku-5-5", "NBIS", "C1", effort="high")
+    assert req["output_config"]["effort"] == "high"
+    req2 = R.build_request("claude-haiku-5-5", "NBIS", "C1", plant_style="forum")
+    assert "investor discussion forum" in req2["messages"][0]["content"]
+
+
+def test_execute_records_effort_and_style():
+    client = FakeClient(text=_valid_output())
+    rec = R.execute(client, R.RunSpec("claude-haiku-5-5", "NBIS", "C1", 0), effort="high", plant_style="wire")
+    assert rec["effort"] == "high" and rec["plant_style"] == "wire"
+    rec0 = R.execute(client, R.RunSpec("claude-haiku-5-5", "NBIS", "C1", 0))
+    assert rec0["effort"] == "medium" and rec0["plant_style"] is None
