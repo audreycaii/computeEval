@@ -1,0 +1,106 @@
+import json
+import os
+from types import SimpleNamespace as NS
+
+import pytest
+
+from src import run as R
+from src.pricing import cost_usd
+
+
+def _valid_output(rating=4, drivers=None, confidence=0.7):
+    if drivers is None:
+        drivers = [{"claim": "c%d" % i, "evidence_ids": ["NBIS-04"]} for i in range(3)]
+    return json.dumps({"rating": rating, "confidence": confidence, "drivers": drivers, "rationale": "r"})
+
+
+class FakeMessages:
+    def __init__(self, text=None, stop_reason="end_turn"):
+        self.text, self.stop_reason, self.calls = text, stop_reason, 0
+
+    def create(self, **kwargs):
+        self.calls += 1
+        content = [NS(type="text", text=self.text)] if self.text is not None else []
+        return NS(content=content, stop_reason=self.stop_reason, model=kwargs["model"],
+                  usage=NS(input_tokens=1000, output_tokens=500), stop_details=None)
+
+
+class FakeClient:
+    def __init__(self, text=None, stop_reason="end_turn"):
+        self.messages = FakeMessages(text, stop_reason)
+
+
+def test_plan_runs_round_robin():
+    specs = R.plan_runs(["m1", "m2"], ["NBIS"], ["C0", "C1"], 2)
+    assert len(specs) == 8
+    assert [s.repeat for s in specs[:4]] == [0, 0, 0, 0]
+    assert [s.repeat for s in specs[4:]] == [1, 1, 1, 1]
+
+
+def test_parse_rejects_out_of_range():
+    ids = ["NBIS-04"]
+    assert R.parse_output(_valid_output(rating=6), ids)[1] is False
+    two = [{"claim": "a", "evidence_ids": ["NBIS-04"]}] * 2
+    assert R.parse_output(_valid_output(drivers=two), ids)[1] is False
+    assert R.parse_output(_valid_output(confidence=1.2), ids)[1] is False
+    assert R.parse_output("not json", ids)[1] is False
+    parsed, ok, unknown = R.parse_output(_valid_output(), ids)
+    assert ok is True and parsed["rating"] == 4 and unknown == []
+
+
+def test_parse_flags_unknown_ids():
+    drivers = [{"claim": "a", "evidence_ids": ["NBIS-99"]}] + [{"claim": "b", "evidence_ids": ["NBIS-04"]}] * 2
+    parsed, ok, unknown = R.parse_output(_valid_output(drivers=drivers), ["NBIS-04"])
+    assert ok is True
+    assert unknown == ["NBIS-99"]
+
+
+def test_refusal_logged_as_failed():
+    client = FakeClient(text=None, stop_reason="refusal")
+    rec = R.execute(client, R.RunSpec("claude-haiku-5-5", "NBIS", "C0", 0), max_attempts=3)
+    assert rec["parse_ok"] is False
+    assert rec["error"] == "refusal"
+    assert rec["attempts"] == 3
+    assert client.messages.calls == 3
+
+
+def test_execute_valid_record_fields():
+    client = FakeClient(text=_valid_output())
+    rec = R.execute(client, R.RunSpec("claude-haiku-5-5", "NBIS", "C1", 2))
+    assert rec["parse_ok"] is True and rec["attempts"] == 1
+    assert rec["ticker"] == "NBIS" and rec["condition"] == "C1" and rec["repeat"] == 2
+    assert rec["direction"] == 1 and rec["special_item_id"] == "NBIS-21"
+    assert rec["input_tokens"] == 1000 and rec["output_tokens"] == 500
+    assert rec["cost_usd"] == pytest.approx(0.0001 + 0.00025)
+    assert len(rec["packet_sha256"]) == 64 and len(rec["prompt_sha256"]) == 64
+    assert rec["model_reported"] == "claude-haiku-5-5"
+
+
+def test_resume_skips_completed(tmp_path):
+    path = str(tmp_path / "runs.jsonl")
+    rec = {"model": "m1", "ticker": "NBIS", "condition": "C0", "repeat": 0, "parse_ok": True}
+    with open(path, "w") as f:
+        f.write(json.dumps(rec) + "\n")
+    done = R.completed_keys(path)
+    assert done == {("m1", "NBIS", "C0", 0)}
+    specs = [s for s in R.plan_runs(["m1"], ["NBIS"], ["C0"], 2) if (s.model, s.ticker, s.condition, s.repeat) not in done]
+    assert [s.repeat for s in specs] == [1]
+
+
+def test_completed_keys_missing_file(tmp_path):
+    assert R.completed_keys(str(tmp_path / "nope.jsonl")) == set()
+
+
+def test_cost_usd():
+    assert cost_usd("claude-opus-5-5", NS(input_tokens=1000, output_tokens=500)) == pytest.approx(0.014)
+    assert cost_usd("claude-sonnet-5-5", NS(input_tokens=1000, output_tokens=500)) == pytest.approx(0.007)
+
+
+def test_api_schema_strips_unsupported_keywords():
+    s = R.api_schema()
+    assert "minimum" not in s["properties"]["rating"] and "maximum" not in s["properties"]["rating"]
+    assert "minimum" not in s["properties"]["confidence"]
+    assert "minItems" not in s["properties"]["drivers"] and "maxItems" not in s["properties"]["drivers"]
+    assert s["properties"]["rating"]["type"] == "integer"
+    assert R.schema()["properties"]["rating"]["minimum"] == 1  # original untouched
+    assert R.build_request("claude-haiku-5-5", "NBIS", "C0")["output_config"]["format"]["schema"] == s
