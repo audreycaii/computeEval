@@ -1,0 +1,4 @@
+anthropic==0.125.0
+matplotlib
+jsonschema
+pytest

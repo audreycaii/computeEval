@@ -1,0 +1,7 @@
+Given only the evidence in this packet, is {company} ({ticker}) attractively valued at its current share price as of {as_of_date}?
+
+Rating scale: 1 = strongly unattractive (overvalued), 2 = unattractive, 3 = fairly valued, 4 = attractive, 5 = strongly attractive (undervalued).
+
+Return: rating (integer 1-5), confidence (0-1), drivers (exactly three, each with a claim and the evidence_ids it rests on), rationale (at most 120 words).
+
+{packet}
