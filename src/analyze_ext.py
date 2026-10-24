@@ -181,17 +181,27 @@ def write_effort_table(effort_df: pd.DataFrame, path: str) -> None:
         f.write("\n".join(lines) + "\n")
 
 
-def write_provenance_table(prov_pooled: pd.DataFrame, main_pooled: pd.DataFrame, path: str) -> None:
-    """Rows = models; columns = E1 for the original plant and for each style."""
-    lines = ["\\begin{tabular}{@{}lrrrr@{}}", "\\toprule",
-             "Model & Original plant & Filing & Wire & Forum \\\\", "\\midrule"]
-    for model in sorted(prov_pooled["model"].unique(), key=lambda m: list(A.MODEL_LABEL).index(m) if m in A.MODEL_LABEL else 99):
-        mp = main_pooled[main_pooled.model == model].iloc[0]
-        vals = [A._fmt(mp["E1"], mp["E1_lo"], mp["E1_hi"])]
-        for st in STYLES:
-            r = prov_pooled[(prov_pooled["model"] == model) & (prov_pooled["style"] == st)]
-            vals.append(A._fmt(r.iloc[0]["E1"], r.iloc[0]["E1_lo"], r.iloc[0]["E1_hi"]) if not r.empty else "--")
-        lines.append("%s & %s \\\\" % (A.MODEL_LABEL.get(model, model), " & ".join(vals)))
+def write_provenance_table(prov_pooled: pd.DataFrame, main_pooled: pd.DataFrame, path: str, intervals: bool = False) -> None:
+    """Rows = plant label (original, then each style); columns = models; cells = pooled E1, with the 95%
+    interval in script size when ``intervals`` is set (appendix version) and point estimates otherwise."""
+    models = sorted(prov_pooled["model"].unique(), key=lambda m: list(A.MODEL_LABEL).index(m) if m in A.MODEL_LABEL else 99)
+
+    def cell(x, lo, hi):
+        return "%s {\\scriptsize[%s,\\,%s]}" % (A._num(x), A._num(lo), A._num(hi)) if intervals else A._num(x)
+
+    lines = ["\\begin{tabular}{@{}l" + "r" * len(models) + "@{}}", "\\toprule",
+             "Plant label & " + " & ".join(A.MODEL_LABEL.get(m, m).split()[0] for m in models) + " \\\\", "\\midrule"]
+    vals = []
+    for m in models:
+        mp = main_pooled[main_pooled.model == m].iloc[0]
+        vals.append(cell(mp["E1"], mp["E1_lo"], mp["E1_hi"]))
+    lines.append("Original & " + " & ".join(vals) + " \\\\")
+    for st in STYLES:
+        vals = []
+        for m in models:
+            r = prov_pooled[(prov_pooled["model"] == m) & (prov_pooled["style"] == st)]
+            vals.append(cell(r.iloc[0]["E1"], r.iloc[0]["E1_lo"], r.iloc[0]["E1_hi"]) if not r.empty else "--")
+        lines.append("%s & %s \\\\" % (STYLE_LABEL[st], " & ".join(vals)))
     lines += ["\\bottomrule", "\\end{tabular}"]
     with open(path, "w") as f:
         f.write("\n".join(lines) + "\n")
@@ -268,6 +278,7 @@ def main(argv=None) -> int:
     pooled.to_csv(os.path.join(args.out, "ext_provenance.csv"), index=False)
     main_pooled = eff[eff.effort == "medium"]
     write_provenance_table(pooled, main_pooled, os.path.join(args.out, "ext_provenance_table.tex"))
+    write_provenance_table(pooled, main_pooled, os.path.join(args.out, "ext_provenance_table_full.tex"), intervals=True)
     rep = repeats_needed(args.runs)
     rep.to_csv(os.path.join(args.out, "ext_repeats.csv"), index=False)
     fig_repeats(rep, os.path.join(args.out, "fig4_repeats.pdf"))

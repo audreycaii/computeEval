@@ -15,9 +15,20 @@ from src import packets as P
 
 SETTINGS = ["medium", "high", "skeptical"]
 SETTING_LABEL = {"medium": "medium", "high": "high", "skeptical": "sceptical prompt"}
+SETTING_SHORT = {"medium": "medium", "high": "high", "skeptical": "sceptical"}
+DIAG_SHORT = {"resistant-responsive": "RR", "insensitive": "I", "credulous": "C", "mixed": "M", "undefined": "--"}
+
+
+def _fmt_compact(x: float, lo: float, hi: float) -> str:
+    """Point value with the interval in script size, for tables that must fit the text width."""
+    if x is None or (isinstance(x, float) and math.isnan(x)):
+        return "--"
+    if lo is None or hi is None or (isinstance(lo, float) and math.isnan(lo)) or (isinstance(hi, float) and math.isnan(hi)):
+        return A._num(x)
+    return "%s {\\scriptsize[%s,\\,%s]}" % (A._num(x), A._num(lo), A._num(hi))
 SETTING_WORD = {"medium": "Med", "high": "High", "skeptical": "Skeptical"}
 K_WORD = {1: "One", 3: "Three", 5: "Five"}
-COND_WORD = {"C0": "Czero", "C1": "Cone", "C2": "Ctwo"}
+COND_WORD = {"C0": "Czero", "C1": "Cone", "C2": "Ctwo", "C3": "Cthree"}
 RATINGS = np.arange(1, 6)
 
 
@@ -203,8 +214,8 @@ def marker_check(paths: Dict[str, str]) -> pd.DataFrame:
 
 def write_settings_table(pooled_settings: pd.DataFrame, path: str) -> None:
     cols = [("N", "$N$"), ("E1", "$E_1$"), ("E2", "$E_2$"), ("E3", "$E_3$"), ("Sel", "$\\Sigma$")]
-    lines = ["\\begin{tabular}{@{}ll" + "r" * len(cols) + "l@{}}", "\\toprule",
-             "Model & Setting & " + " & ".join(h for _, h in cols) + " & Diagnosis \\\\", "\\midrule"]
+    lines = ["\\begin{tabular}{@{}ll" + "r" * len(cols) + "c@{}}", "\\toprule",
+             "Model & Setting & " + " & ".join(h for _, h in cols) + " & Diag. \\\\", "\\midrule"]
     for model in _model_order(pooled_settings["model"]):
         first = True
         for setting in SETTINGS:
@@ -212,12 +223,9 @@ def write_settings_table(pooled_settings: pd.DataFrame, path: str) -> None:
             if r.empty:
                 continue
             r = r.iloc[0]
-            vals = []
-            for k, _ in cols:
-                x = r[k]
-                vals.append("--" if (x is None or (isinstance(x, float) and math.isnan(x))) else A._fmt(x, r[k + "_lo"], r[k + "_hi"]))
-            lines.append("%s & %s & %s & %s \\\\" % (A.MODEL_LABEL.get(model, model) if first else "", SETTING_LABEL[setting],
-                                                     " & ".join(vals), r["diagnosis"]))
+            vals = [_fmt_compact(r[k], r[k + "_lo"], r[k + "_hi"]) for k, _ in cols]
+            lines.append("%s & %s & %s & %s \\\\" % (A.MODEL_LABEL.get(model, model) if first else "", SETTING_SHORT[setting],
+                                                     " & ".join(vals), DIAG_SHORT.get(r["diagnosis"], r["diagnosis"])))
             first = False
     lines += ["\\bottomrule", "\\end{tabular}"]
     with open(path, "w") as f:
@@ -231,7 +239,7 @@ def write_vote_table(vote_pooled: pd.DataFrame, path: str) -> None:
     for model in _model_order(vote_pooled["model"]):
         first = True
         for _, r in vote_pooled[vote_pooled.model == model].sort_values("k").iterrows():
-            vals = [A._fmt(r[k], r[k + "_lo"], r[k + "_hi"]) for k, _ in cols]
+            vals = [_fmt_compact(r[k], r[k + "_lo"], r[k + "_hi"]) for k, _ in cols]
             lines.append("%s & %d & %s \\\\" % (A.MODEL_LABEL.get(model, model) if first else "", int(r["k"]), " & ".join(vals)))
             first = False
     lines += ["\\bottomrule", "\\end{tabular}"]
@@ -242,9 +250,10 @@ def write_vote_table(vote_pooled: pd.DataFrame, path: str) -> None:
 def write_marker_table(marker: pd.DataFrame, path: str) -> None:
     conds = ["C0", "C1", "C2"]
     settings = [s for s in ("medium", "skeptical") if s in set(marker["setting"])]
-    head = " & ".join("%s %s" % (SETTING_LABEL[s], c) for s in settings for c in conds)
+    group = " & ".join("\\multicolumn{%d}{c}{%s}" % (len(conds), "default prompt" if s == "medium" else SETTING_LABEL[s]) for s in settings)
+    head = " & ".join(c for _s in settings for c in conds)
     lines = ["\\begin{tabular}{@{}l" + "r" * (len(settings) * len(conds)) + "@{}}", "\\toprule",
-             "Model & " + head + " \\\\", "\\midrule"]
+             "& " + group + " \\\\", "Model & " + head + " \\\\", "\\midrule"]
     for model in _model_order(marker["model"]):
         vals = []
         for s in settings:
@@ -287,7 +296,7 @@ def write_ext2_numbers(pooled_settings: pd.DataFrame, vote_pooled: pd.DataFrame,
     # Pre-registered cell counts for Extension E.
     k1 = vote_cells[vote_cells.k == 1].set_index(["model", "ticker"])
     kmax = vote_cells[vote_cells.k == vote_cells.k.max()].set_index(["model", "ticker"])
-    moving = [idx for idx in k1.index if k1.loc[idx, "E1"] > eps]
+    moving = [idx for idx in k1.index if k1.loc[idx, "E1"] > eps + 1e-9]  # a cell at exactly eps is not "> eps"
     rises = sum(1 for idx in moving if kmax.loc[idx, "E1"] >= k1.loc[idx, "E1"] - 1e-9)
     toward_one = sum(1 for idx in moving if kmax.loc[idx, "E1"] >= 0.9)
     noisy = [idx for idx in k1.index if k1.loc[idx, "N"] > 1e-12]
@@ -320,7 +329,7 @@ def fig_plane(pooled_settings: pd.DataFrame, cells_settings: pd.DataFrame, path:
     matplotlib.rcParams.update({"pdf.fonttype": 42, "font.size": 8, "axes.spines.top": False, "axes.spines.right": False})
     colors = {"claude-opus-5-5": A.PALETTE["C0"], "claude-sonnet-5-5": A.PALETTE["C2"], "claude-haiku-5-5": A.PALETTE["C1"]}
     markers = {"medium": "o", "high": "s", "skeptical": "^"}
-    fig, ax = plt.subplots(figsize=(3.3, 3.0))
+    fig, ax = plt.subplots(figsize=(3.3, 2.0))
     lim = (-0.3, 1.05)
     ax.plot(lim, lim, linestyle="--", color="#999999", linewidth=0.8)
     ax.axvline(eps, linestyle=":", color="#999999", linewidth=0.8)
@@ -328,7 +337,7 @@ def fig_plane(pooled_settings: pd.DataFrame, cells_settings: pd.DataFrame, path:
     ax.text(-0.27, 0.98, "resistant-\nresponsive", fontsize=6.5, color="#555555", va="top")
     ax.text(-0.27, -0.27, "insensitive", fontsize=6.5, color="#555555", va="bottom")
     ax.text(1.03, 0.98, "both move", fontsize=6.5, color="#555555", va="top", ha="right")
-    ax.text(1.03, -0.27, "plant only", fontsize=6.5, color="#555555", va="bottom", ha="right")
+    ax.text(0.62, -0.27, "plant only", fontsize=6.5, color="#555555", va="bottom", ha="right")
     for r in cells_settings.itertuples(index=False):
         if r.setting != "medium":
             continue
@@ -339,14 +348,14 @@ def fig_plane(pooled_settings: pd.DataFrame, cells_settings: pd.DataFrame, path:
                     yerr=[[max(r.E2 - r.E2_lo, 0)], [max(r.E2_hi - r.E2, 0)]], fmt=markers[r.setting], color=c,
                     markersize=6, capsize=2, linewidth=0.8, markeredgecolor="white", markeredgewidth=0.5)
     ax.set_xlim(*lim), ax.set_ylim(*lim)
-    ax.set_xlabel("$E_1$: excess change under the false plant")
-    ax.set_ylabel("$E_2$: excess change under the true update")
-    ax.set_aspect("equal")
+    ax.set_xlabel("$E_1$ (false plant, net of noise)")
+    ax.set_ylabel("$E_2$ (true update)")
     ax.grid(color="#eeeeee", linewidth=0.5)
     ax.set_axisbelow(True)
+    # Marker shapes (setting) are explained in the caption; the legend carries only the model colours.
     handles = [Line2D([], [], color=colors[m], marker="o", linestyle="", markersize=5, label=A.MODEL_LABEL[m]) for m in colors if m in set(pooled_settings["model"])]
-    handles += [Line2D([], [], color="#444444", marker=markers[s], linestyle="", markersize=5, label=SETTING_LABEL[s]) for s in SETTINGS if s in set(pooled_settings["setting"])]
-    ax.legend(handles=handles, frameon=False, fontsize=6.5, loc="center right", bbox_to_anchor=(1.0, 0.45))
+    ax.legend(handles=handles, frameon=False, fontsize=6.5, loc="lower right", bbox_to_anchor=(1.0, 0.02), handletextpad=0.3, borderaxespad=0.2)
+    ax.text(1.03, -0.27, "plant only", fontsize=6.5, color="#555555", va="bottom", ha="right", alpha=0)
     fig.tight_layout()
     fig.savefig(path, bbox_inches="tight")
     plt.close(fig)

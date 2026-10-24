@@ -16,14 +16,17 @@ for this evaluation and are not factual. Nothing in this repository is investmen
 |---|---|
 | `METRICS.md` | Pre-registered metric definitions, committed before the pilot and unchanged since |
 | `METRICS-EXT.md` | Pre-registered extension metrics (effort replication, provenance gradient, repeats needed), committed before the extension runs |
+| `METRICS-EXT2.md` | Pre-registered round-two metrics (selectivity, repeat-and-vote, sceptical prompt), committed before the sceptical-prompt runs |
 | `src/analyze_ext.py` | Extension analyses: `python3 -m src.analyze_ext` reads `runs/ext_*.jsonl` and writes `results/ext_*` and `results/numbers_ext.tex` |
+| `src/analyze_ext2.py` | Round-two analyses: `python3 -m src.analyze_ext2` writes `results/ext2_*`, `results/fig5_plane.pdf` and `results/numbers_ext2.tex` |
 | `packets/<TICKER>.json` | Evidence items per ticker with role tags and sources (as of 2026-10-01) |
-| `prompts/` | System prompt, question template, output JSON schema |
+| `prompts/` | System prompt (`system.txt`), its sceptical variant (`system_skeptical.txt`, one added rule), question template, output JSON schema |
 | `src/packets.py` | Renders a packet for a condition; deterministic, hashed |
 | `src/run.py` | Resumable driver: one Claude API call per run, one JSONL line per run |
 | `src/metrics.py` | Pairwise disagreement, noise floor, excess flip, shift, attribution, bootstrap |
 | `src/analyze.py` | CSV tables, LaTeX table and number macros, figures |
 | `runs/pilot*.jsonl`, `runs/runs.jsonl` | Raw run logs (pilot rounds, full run) with token usage and cost |
+| `runs/ext_*.jsonl` | Extension run logs: effort high, provenance styles, sceptical prompt |
 | `results/` | Generated: `metrics.csv`, `summary.csv`, `table1.tex`, `tableA.tex`, `numbers.tex`, figures, `cost.txt` |
 | `paper/` | AES LaTeX template, `main.tex`, `references.bib`, `build.sh`, `main.pdf` |
 | `docs/` | Design spec, implementation plan, pilot notes |
@@ -43,11 +46,15 @@ python3 -m src.analyze --runs runs/runs.jsonl --out results --cutoffs    # table
 python3 -m src.run --effort high --repeats 10 --out runs/ext_effort_high.jsonl --concurrency 4
 for st in filing wire forum; do python3 -m src.run --conditions C1 --plant-style $st --repeats 10 --out runs/ext_provenance_$st.jsonl; done
 python3 -m src.analyze_ext                             # extension tables, figures, macros
+python3 -m src.run --system-variant skeptical --conditions C0 C1 C2 --repeats 10 --concurrency 6   # -> runs/ext_skeptical.jsonl
+python3 -m src.run --system-variant skeptical --models claude-haiku-5-5 --conditions C0 --repeats 20 --concurrency 6
+python3 -m src.analyze_ext2                            # round-two tables, plane figure, macros
 sh paper/build.sh                                      # needs tools/tectonic (see below)
 ```
 
 The driver skips (model, ticker, condition, repeat) cells already present in the output file,
-so an interrupted run resumes by re-running the same command. Runs that fail three times
+so an interrupted run resumes by re-running the same command. A run file holds one system-prompt
+variant; the driver refuses to append runs of another variant to it. Runs that fail three times
 (refusal, output-token cap, schema-invalid JSON) are logged with `parse_ok: false`, never
 dropped or fabricated.
 
@@ -76,5 +83,5 @@ affected.
 ## Cost
 
 See `results/cost.txt` for the total and per-model API spend of the main run ($12.83 for 960 runs).
-The extension runs (`runs/ext_*.jsonl`) cost a further $13.30: $8.41 for the 480 high-effort runs and
-$4.88 for the 360 provenance runs.
+The extension runs (`runs/ext_*.jsonl`) cost a further $18.64: $8.41 for the 480 high-effort runs,
+$4.88 for the 360 provenance runs and $5.34 for the 400 sceptical-prompt runs.

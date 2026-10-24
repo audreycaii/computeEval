@@ -104,3 +104,70 @@ def test_combine_settings_concats_frames_with_sample_attrs():
     cells, pooled = Y.combine_settings([(c1, p1), (c2, p2)])
     assert set(cells["setting"]) == {"medium", "high"} and len(pooled) == len(p1) + len(p2)
     assert "samples" in p1.attrs  # the inputs keep their samples for the paired comparison
+
+
+def test_skeptical_comparison_pairs_samples():
+    _, pa = Y.setting_frame(FIX, "medium", n_boot=40, seed=0)
+    _, pb = Y.setting_frame(FIX, "skeptical", n_boot=40, seed=3)
+    comp = Y.skeptical_comparison(pa, pb)
+    row = comp.iloc[0]
+    assert np.isclose(row["dSel"], row["Sel_skep"] - row["Sel_main"])
+    # the interval is of the resample-wise difference: recompute it by hand for the first model
+    model = row["model"]
+    def pooled(p):
+        arrs = [v["Sel"] for (m, _t), v in p.attrs["samples"].items() if m == model]
+        return np.nanmean(np.vstack(arrs), axis=0)
+    diff = pooled(pb) - pooled(pa)
+    assert np.isclose(row["dSel_lo"], np.nanpercentile(diff, 2.5)) and np.isclose(row["dSel_hi"], np.nanpercentile(diff, 97.5))
+    assert row["dSel_interval_has_zero"] == (row["dSel_lo"] <= 0 <= row["dSel_hi"])
+
+
+def test_marker_check_counts_case_insensitive(tmp_path):
+    rows = [r for r in (json.loads(l) for l in open(FIX)) if r.get("parsed")]
+    for r in rows:
+        r["parsed"]["rationale"] = "plain"
+    rows[0]["parsed"]["rationale"] = "a SYNTHETIC item"
+    rows[1]["parsed"]["drivers"][1]["claim"] = "synthetic claim"
+    path = _write(tmp_path, "m.jsonl", rows)
+    mk = Y.marker_check({"medium": path})
+    df = A.load_runs(path)
+    for _, r in mk.iterrows():
+        g = df[(df.model == r["model"]) & (df.condition == r["condition"])]
+        assert np.isclose(r["share"], g["mentions_synthetic"].mean()) and r["n"] == len(g)
+    assert np.isclose((mk["share"] * mk["n"]).sum(), 2)
+
+
+def test_ext2_numbers_have_no_digits_in_names(tmp_path):
+    import re
+    cells, pooled = Y.setting_frame(FIX, "medium", n_boot=20)
+    cells2, pooled2 = Y.setting_frame(FIX, "skeptical", n_boot=20, seed=2)
+    _, pooled_all = Y.combine_settings([(cells, pooled), (cells2, pooled2)])
+    vcells, vpooled = Y.vote(FIX, ks=(1, 3), n_boot=10)
+    comp = Y.skeptical_comparison(pooled, pooled2)
+    marker = Y.marker_check({"medium": FIX, "skeptical": FIX})
+    out = str(tmp_path / "n.tex")
+    Y.write_ext2_numbers(pooled_all, vpooled, vcells, comp, marker, out)
+    names = re.findall(r"\\newcommand\{\\([A-Za-z0-9]+)\}", open(out).read())
+    assert names and all(not re.search(r"\d", n) for n in names), [n for n in names if re.search(r"\d", n)]
+    assert len(names) == len(set(names)), "duplicate macro"
+    assert any(n.endswith("SkepticalSel") for n in names) and any(n.startswith("yVoteCells") for n in names)
+
+
+def test_vote_cell_counts_exclude_boundary_at_eps(tmp_path):
+    # C0 all 3; C1 has one 4 in twenty, so plug-in E1 = 1 - 0.95 = 0.05 exactly: not "> eps"
+    rows = []
+    def add(cond, ratings, sid):
+        for i, r in enumerate(ratings):
+            rows.append({"run_id": "%s%d" % (cond, i), "model": "mA", "ticker": "NBIS", "condition": cond, "direction": 1, "repeat": i,
+                         "special_item_id": sid, "parse_ok": True, "unknown_ids": [], "input_tokens": 1, "output_tokens": 1, "cost_usd": 0,
+                         "parsed": {"rating": r, "confidence": 0.5, "fair_value_usd": 100.0, "rationale": "x",
+                                    "drivers": [{"claim": "c", "evidence_ids": [sid or "NBIS-04"]}] * 3}})
+    add("C0", [3] * 20, None); add("C1", [3] * 19 + [4], "NBIS-21"); add("C2", [4] * 20, "NBIS-20")
+    path = _write(tmp_path, "b.jsonl", rows)
+    vcells, vpooled = Y.vote(path, ks=(1, 5), n_boot=5)
+    assert vcells[vcells.k == 1].iloc[0]["E1"] >= 0.05
+    _, pooled = Y.setting_frame(path, "medium", n_boot=5)
+    out = str(tmp_path / "n.tex")
+    Y.write_ext2_numbers(pooled, vpooled, vcells, pd.DataFrame(), pd.DataFrame(), out)
+    tex = open(out).read()
+    assert "\\newcommand{\\yVoteCellsMoving}{0}" in tex, tex[tex.find("yVoteCellsMoving") - 20:tex.find("yVoteCellsMoving") + 40]
