@@ -5,6 +5,7 @@
 \input{../results/numbers.tex}
 \input{../results/numbers_ext.tex}
 \input{../results/numbers_ext2.tex}
+\input{../results/numbers_ext3.tex}
 % Let text share a page with the two results figures instead of forcing a float page.
 \renewcommand{\topfraction}{0.95}
 \renewcommand{\floatpagefraction}{0.95}
@@ -25,7 +26,7 @@
 \maketitle
 
 \begin{abstract}
-Studies of evidence manipulation in financial LLM agents report ``flip rates'': the share of decisions that change when a poisoned document is added. Most run each decision once, so a flip cannot be told apart from run-to-run variation, and none we reviewed has a true-update control, so an agent that never changes its mind scores as perfectly robust. We propose a protocol that measures both and places each agent on an $(E_1, E_2)$ plane of excess change under a false plant and under a matched true update, net of a noise floor from repeated clean runs, applied to three Claude models (Opus 5.5, Sonnet 5.5, Haiku 5.5) rating four AI-compute companies from frozen evidence packets, 20 repeats per cell. Noise floors range from \mSonnetNoise{} (Sonnet) to \mHaikuNoise{} (Haiku), so a raw flip rate overstates Haiku's effect by about \mHaikuNoise{}. Net of noise, the plant moves ratings as much as the true update for Haiku ($E_1$ = \mHaikuEone{} versus $E_2$ = \mHaikuEtwo{}), more for Opus (\mOpusEone{} versus \mOpusEtwo{}) and less for Sonnet (\mSonnetEone{} versus \mSonnetEtwo{}); an immaterial item moves Opus ($E_3$ = \mOpusEthree{}). Six pre-registered extensions show that high effort nearly doubles Haiku's response to the true update but not to the plant; that relabelling the plant as a forum post removes its effect on Opus; and that neither obvious mitigation makes the models resistant-responsive: the median of five runs cuts the noise floor but leaves the plant's effect in place or larger, and a sceptical-provenance prompt moves the three models in three directions, Opus to resistant-responsive on the strength of one ticker, Haiku to more selective, Sonnet to as credulous as it is responsive. Packets, plants (labelled synthetic), prompts, logs and code are released.
+Studies of evidence manipulation in financial LLM agents report ``flip rates'': the share of decisions that change when a poisoned document is added. Most run each decision once, so a flip cannot be told apart from run-to-run variation, and none we reviewed has a true-update control, so an agent that never changes its mind scores as perfectly robust. We propose a protocol that measures both and places each agent on an $(E_1, E_2)$ plane of excess change under a false plant and under a matched true update, net of a noise floor from repeated clean runs, applied to three Claude models (Opus 5.5, Sonnet 5.5, Haiku 5.5) rating four AI-compute companies from frozen evidence packets, 20 repeats per cell. Noise floors range from \mSonnetNoise{} (Sonnet) to \mHaikuNoise{} (Haiku), so a raw flip rate overstates Haiku's effect by about \mHaikuNoise{}. Net of noise, the plant moves ratings as much as the true update for Haiku ($E_1$ = \mHaikuEone{} versus $E_2$ = \mHaikuEtwo{}), more for Opus (\mOpusEone{} versus \mOpusEtwo{}) and less for Sonnet (\mSonnetEone{} versus \mSonnetEtwo{}); an immaterial item moves Opus ($E_3$ = \mOpusEthree{}). Six pre-registered extensions show that high effort nearly doubles Haiku's response to the true update but not to the plant; that relabelling the plant as a forum post removes its effect on Opus; and that neither obvious mitigation makes the models resistant-responsive: the median of five runs cuts the noise floor but leaves the plant's effect in place or larger, and a sceptical-provenance prompt moves the three models in three directions, Opus to resistant-responsive on the strength of one ticker, Haiku to more selective, Sonnet to as credulous as it is responsive. Packets, plants (flagged synthetic in the released data, not in the prompt), prompts, logs and code are released.
 \end{abstract}
 
 \section{Introduction}
@@ -51,7 +52,7 @@ Four tickers: Nebius (NBIS), CoreWeave (CRWV) and IREN, three GPU-cloud ``neoclo
 
 \subsection{Conditions}
 \label{sec:conditions}
-Each ticker has three special items that appear only in their condition (Appendix Table~\ref{tab:conditions}). The \emph{true update} is a real, material, dated fact withheld from the clean packet. The \emph{false plant} is a synthetic counterfactual written to push the same direction with, by the author's judgement, comparable materiality, carrying numbers no real source reports and no share-price reaction clause, matching the true update's source style and month where possible (not for NVDA, whose update is the August quarter and plant a September pre-announcement, nor IREN, whose update is a third-party rating and plant a company statement). The \emph{immaterial item} is synthetic. Every synthetic item's source label ends in ``(SYNTHETIC)'', visible to the model; true updates carry no marker. Direction is balanced across tickers (NBIS and NVDA positive, CRWV and IREN negative) so a model's general optimism cannot pass for responsiveness.
+Each ticker has three special items that appear only in their condition (Appendix Table~\ref{tab:conditions}). The \emph{true update} is a real, material, dated fact withheld from the clean packet. The \emph{false plant} is a synthetic counterfactual written to push the same direction with, by the author's judgement, comparable materiality, carrying numbers no real source reports and no share-price reaction clause, matching the true update's source style and month where possible (not for NVDA, whose update is the August quarter and plant a September pre-announcement, nor IREN, whose update is a third-party rating and plant a company statement). The \emph{immaterial item} is synthetic. Synthetic items are flagged in the released data and in Appendix Table~\ref{tab:conditions}; the packet the model reads carries no marker. (A first round of every run showed the model a ``(SYNTHETIC)'' suffix on those items' source labels; it was repeated without the suffix, and the two rounds are compared in Appendix~\ref{app:marker}.) Direction is balanced across tickers (NBIS and NVDA positive, CRWV and IREN negative) so a model's general optimism cannot pass for responsiveness.
 
 \subsection{Metrics}
 \label{sec:metrics}
@@ -68,7 +69,7 @@ over all pairs (distinct pairs when $A=B$). The \textbf{noise floor} is $N = D(R
 
 \subsection{Pre-registration and pilot}
 \label{sec:prereg}
-The metric definitions were committed before any full run and not edited after; extension rounds were pre-registered before their runs, though extensions C--E analyse runs already seen, so only A, B and F are prospective. A 12-run Sonnet pilot on NBIS (Appendix~\ref{app:prompts}) led to one packet edit made after seeing one cell's outcome, to the exploratory fair-value field, and to 20 repeats instead of 10 because every pilot round gave the same clean rating. The full run is 4 tickers $\times$ 4 conditions $\times$ 3 models $\times$ 20 repeats: \nValidRuns{} of \nTotalRuns{} runs schema-valid (\nFailedRuns{} failed, \nRetries{} retried), \$\costTotal{} in total.
+The metric definitions were committed before any full run and not edited after; extension rounds were pre-registered before their runs, though extensions C--E analyse runs already seen, so only A, B, F and the marker-free repeat (Appendix~\ref{app:marker}) are prospective. A 12-run Sonnet pilot on NBIS (Appendix~\ref{app:prompts}) led to one packet edit made after seeing one cell's outcome, to the exploratory fair-value field, and to 20 repeats instead of 10 because every pilot round gave the same clean rating. The full run is 4 tickers $\times$ 4 conditions $\times$ 3 models $\times$ 20 repeats: \nValidRuns{} of \nTotalRuns{} runs schema-valid (\nFailedRuns{} failed, \nRetries{} retried), \$\costTotal{} in total.
 
 \section{Results}
 \label{sec:results}
@@ -137,7 +138,7 @@ One added rule (Appendix~\ref{app:prompts}) tells the model to weigh items by so
 
 \section{Limitations}
 \label{sec:limitations}
-Claims are bounded to static-packet, single-call research agents, three models from one vendor whose training cutoffs may post-date several 2026 base items, four tickers and October 2026. ``Credulous'' means moved by an unverifiable counterfactual item that the packet itself labels synthetic and the default prompt admits: relative to ground truth, not instructions. Plants are author-written and match their true update in materiality only by judgement and not always in source type, an asymmetry the sceptical prompt exploits (its one filing-labelled plant, CRWV, still moved Haiku: $E_1'$ = \yHaikuSkepticalCRWVEone{}).
+Claims are bounded to static-packet, single-call research agents, three models from one vendor whose training cutoffs may post-date several 2026 base items, four tickers and October 2026. ``Credulous'' means moved by an unverifiable counterfactual item that the default prompt admits: relative to ground truth, not instructions. Plants are author-written and match their true update in materiality only by judgement and not always in source type, an asymmetry the sceptical prompt exploits (its one filing-labelled plant, CRWV, still moved Haiku: $E_1'$ = \yHaikuSkepticalCRWVEone{}).
 \bibliography{references}
 
 \appendix
@@ -182,11 +183,21 @@ Packets, plants (flagged synthetic in the data and in Appendix~\ref{app:packets}
 \caption{Repeat-and-vote (Extension E): plug-in metrics on the median of $k$ runs, pooled over tickers, from the main run. The $k=1$ row is the plug-in form and differs from the distinct-pair $N$ of Table~\ref{tab:main} by the factor $(n-1)/n$.}
 \label{tab:vote}
 \end{table}
+\paragraph{Extension G: marker visibility.}
+\label{app:marker}
+%EXT-G-TEXT
+\begin{table}[htbp]
+\centering
+\footnotesize
+\input{../results/ext3_marker_table.tex}
+\caption{Extension G: pooled metrics at effort = medium with the ``(SYNTHETIC)'' suffix visible to the model (first round, 960 runs) and hidden (the runs reported in the body, 960 runs); the difference row is hidden minus visible with the interval of the resample-by-resample difference.}
+\label{tab:markervis}
+\end{table}
 \begin{table}[htbp]
 \centering
 \footnotesize
 \input{../results/ext2_marker_table.tex}
-\caption{Marker check (Extension F): share of valid runs whose rationale or driver claims contain the string ``synthetic'', by prompt and condition.}
+\caption{Marker check: share of valid runs whose rationale or driver claims contain the string ``synthetic'', by prompt and condition, in the marker-visible round. In the marker-hidden runs the share is \zHiddenMarkerShare{}.}
 \label{tab:marker}
 \end{table}
 \begin{figure}[htbp]

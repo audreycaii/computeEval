@@ -8,7 +8,8 @@ matched true-update control.
 
 **Synthetic-content notice.** `packets/*.json` and the paper's Appendix C contain synthetic
 counterfactual items (`"synthetic": true`, roles `false_plant` and `noise`). They were written
-for this evaluation and are not factual. Nothing in this repository is investment advice.
+for this evaluation and are not factual. The flag lives in the data and the paper only: the packet text
+rendered to the model carries no marker (`src/packets.py`, `MARKER`). Nothing in this repository is investment advice.
 
 ## Layout
 
@@ -17,8 +18,10 @@ for this evaluation and are not factual. Nothing in this repository is investmen
 | `METRICS.md` | Pre-registered metric definitions, committed before the pilot and unchanged since |
 | `METRICS-EXT.md` | Pre-registered extension metrics (effort replication, provenance gradient, repeats needed), committed before the extension runs |
 | `METRICS-EXT2.md` | Pre-registered round-two metrics (selectivity, repeat-and-vote, sceptical prompt), committed before the sceptical-prompt runs |
+| `METRICS-EXT3.md` | Pre-registered round three: the synthetic marker hidden from the model, every batch rerun, Extension G (marker visible vs hidden), committed before those runs |
 | `src/analyze_ext.py` | Extension analyses: `python3 -m src.analyze_ext` reads `runs/ext_*.jsonl` and writes `results/ext_*` and `results/numbers_ext.tex` |
 | `src/analyze_ext2.py` | Round-two analyses: `python3 -m src.analyze_ext2` writes `results/ext2_*`, `results/fig5_plane.pdf` and `results/numbers_ext2.tex` |
+| `src/analyze_ext3.py` | Extension G: `python3 -m src.analyze_ext3` compares `runs/runs.jsonl` with `runs/labelled/runs.jsonl` and writes `results/ext3_*` and `results/numbers_ext3.tex` |
 | `packets/<TICKER>.json` | Evidence items per ticker with role tags and sources (as of 2026-10-01) |
 | `prompts/` | System prompt (`system.txt`), its sceptical variant (`system_skeptical.txt`, one added rule), question template, output JSON schema |
 | `src/packets.py` | Renders a packet for a condition; deterministic, hashed |
@@ -27,6 +30,8 @@ for this evaluation and are not factual. Nothing in this repository is investmen
 | `src/analyze.py` | CSV tables, LaTeX table and number macros, figures |
 | `runs/pilot*.jsonl`, `runs/runs.jsonl` | Raw run logs (pilot rounds, full run) with token usage and cost |
 | `runs/ext_*.jsonl` | Extension run logs: effort high, provenance styles, sceptical prompt |
+| `runs/labelled/` | The first round of every batch, in which the model saw a `(SYNTHETIC)` suffix on synthetic items; kept for Extension G, reproducible with `--marker-visible` |
+| `runs/run_all.sh` | Launches the four marker-hidden batches in parallel (each resumable) |
 | `results/` | Generated: `metrics.csv`, `summary.csv`, `table1.tex`, `tableA.tex`, `numbers.tex`, figures, `cost.txt` |
 | `paper/` | AES LaTeX template, `main.tex`, `references.bib`, `build.sh`, `main.pdf` |
 | `docs/` | Design spec, implementation plan, pilot notes |
@@ -49,6 +54,8 @@ python3 -m src.analyze_ext                             # extension tables, figur
 python3 -m src.run --system-variant skeptical --conditions C0 C1 C2 --repeats 10 --concurrency 6   # -> runs/ext_skeptical.jsonl
 python3 -m src.run --system-variant skeptical --models claude-haiku-5-5 --conditions C0 --repeats 20 --concurrency 6
 python3 -m src.analyze_ext2                            # round-two tables, plane figure, macros
+python3 -m src.analyze_ext3                            # Extension G: marker visible (runs/labelled) vs hidden (runs/)
+sh runs/run_all.sh                                     # all four marker-hidden batches at once; add --marker-visible to any command above to reproduce runs/labelled/
 sh paper/build.sh                                      # needs tools/tectonic (see below)
 ```
 
