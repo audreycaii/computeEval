@@ -170,7 +170,7 @@ def test_check_variant_refuses_mixed_file(tmp_path):
     path = str(tmp_path / "runs.jsonl")
     assert R.check_variant(path, "skeptical") is None  # missing file is fine
     with open(path, "w") as f:
-        f.write(json.dumps({"model": "m", "ticker": "NBIS", "condition": "C0", "repeat": 0, "system_variant": "skeptical"}) + "\n")
+        f.write(json.dumps({"model": "m", "ticker": "NBIS", "condition": "C0", "repeat": 0, "system_variant": "skeptical", "marker_visible": False}) + "\n")
     assert R.check_variant(path, "skeptical") is None
     with pytest.raises(ValueError):
         R.check_variant(path, "default")
