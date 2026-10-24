@@ -25,6 +25,9 @@ PLANT_STYLES = {
     "forum": ("forum", "Post on an investor discussion forum (SYNTHETIC)"),
 }
 ROLE_FOR_CONDITION = {"C0": None, "C1": "false_plant", "C2": "true_update", "C3": "noise"}
+# Round three (METRICS-EXT3.md): the synthetic marker stays in the data and the paper; the rendered
+# packet drops it unless marker_visible is set (which reproduces the earlier, labelled runs).
+MARKER = " (SYNTHETIC)"
 
 
 def load_packet(ticker: str) -> Dict:
@@ -57,18 +60,21 @@ def item_ids(ticker: str, condition: str) -> List[str]:
     return [it["id"] for it in _items(ticker, condition)]
 
 
-def render(ticker: str, condition: str, plant_style: Optional[str] = None) -> Tuple[str, str]:
+def render(ticker: str, condition: str, plant_style: Optional[str] = None,
+           marker_visible: bool = False) -> Tuple[str, str]:
     items = _items(ticker, condition, plant_style)
     lines = ["Evidence packet for %s (%s), as of %s. %d items." % (COMPANY[ticker], ticker, AS_OF, len(items)), ""]
     for it in items:
-        lines.append("[%s] (%s, %s, %s) %s" % (it["id"], it["date"], it["source_type"], it["source"], it["text"]))
+        source = it["source"] if marker_visible else it["source"].replace(MARKER, "")
+        lines.append("[%s] (%s, %s, %s) %s" % (it["id"], it["date"], it["source_type"], source, it["text"]))
         lines.append("")
     text = "\n".join(lines).rstrip() + "\n"
     return text, hashlib.sha256(text.encode("utf-8")).hexdigest()
 
 
-def build_prompt(ticker: str, condition: str, plant_style: Optional[str] = None) -> str:
+def build_prompt(ticker: str, condition: str, plant_style: Optional[str] = None,
+                 marker_visible: bool = False) -> str:
     with open(os.path.join(PROMPT_DIR, "question.txt"), encoding="utf-8") as f:
         template = f.read()
-    packet_text, _ = render(ticker, condition, plant_style)
+    packet_text, _ = render(ticker, condition, plant_style, marker_visible)
     return template.format(company=COMPANY[ticker], ticker=ticker, as_of_date=AS_OF, packet=packet_text)

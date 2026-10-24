@@ -89,7 +89,7 @@ def test_plant_style_changes_only_the_source_label():
         # the plant's claim text is unchanged; only its (source_type, source) label differs
         plant = [it for it in P.load_packet("NBIS")["items"] if it["role"] == "false_plant"][0]
         assert plant["text"] in text
-        assert "SYNTHETIC" in text
+        assert "SYNTHETIC" not in text
         assert P.PLANT_STYLES[style][0] in text
     assert P.render("NBIS", "C0", plant_style="forum") == P.render("NBIS", "C0")  # no plant, no effect
 
@@ -98,3 +98,24 @@ def test_plant_style_rejects_unknown():
     import pytest
     with pytest.raises(KeyError):
         P.render("NBIS", "C1", plant_style="tv")
+
+
+def test_render_hides_marker_by_default():
+    for t in P.TICKERS:
+        for c in P.CONDITIONS:
+            text, _ = P.render(t, c)
+            assert "SYNTHETIC" not in text, (t, c)
+    for style in P.PLANT_STYLES:
+        assert "SYNTHETIC" not in P.render("NBIS", "C1", plant_style=style)[0]
+    assert "(SYNTHETIC)" in P.render("NBIS", "C1", marker_visible=True)[0]
+
+
+def test_render_marker_visible_differs_only_by_suffix():
+    for t in P.TICKERS:
+        for c in P.CONDITIONS:
+            hidden, sha_h = P.render(t, c)
+            visible, sha_v = P.render(t, c, marker_visible=True)
+            assert visible.replace(" (SYNTHETIC)", "") == hidden
+            assert (sha_h == sha_v) == (c in ("C0", "C2"))  # no synthetic item, no marker to strip
+    assert "SYNTHETIC" not in P.build_prompt("CRWV", "C3")
+    assert "SYNTHETIC" in P.build_prompt("CRWV", "C3", marker_visible=True)

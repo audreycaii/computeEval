@@ -30,6 +30,7 @@ def load_runs(path: str) -> pd.DataFrame:
             free_text = " ".join([str(p.get("rationale") or "")] + [str(d.get("claim") or "") for d in p.get("drivers", [])])
             rows.append({
                 "system_variant": r.get("system_variant") or "default",
+                "marker_visible": bool(r.get("marker_visible", True)),
                 "mentions_synthetic": "synthetic" in free_text.lower(),
                 "run_id": r["run_id"], "model": r["model"], "ticker": r["ticker"], "condition": r["condition"],
                 "direction": r["direction"], "repeat": r["repeat"], "special_item_id": r["special_item_id"],

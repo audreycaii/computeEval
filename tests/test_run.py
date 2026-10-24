@@ -177,7 +177,7 @@ def test_check_variant_refuses_mixed_file(tmp_path):
     legacy = str(tmp_path / "old.jsonl")
     with open(legacy, "w") as f:
         f.write(json.dumps({"model": "m", "ticker": "NBIS", "condition": "C0", "repeat": 0}) + "\n")
-    assert R.check_variant(legacy, "default") is None  # records without the field are default runs
+    assert R.check_variant(legacy, "default", marker_visible=True) is None  # records without the field are default runs
     with pytest.raises(ValueError):
         R.check_variant(legacy, "skeptical")
     mixed = str(tmp_path / "mixed.jsonl")  # a later record with another variant is caught too
@@ -186,3 +186,28 @@ def test_check_variant_refuses_mixed_file(tmp_path):
         f.write(json.dumps({"model": "m", "ticker": "NBIS", "condition": "C0", "repeat": 1, "system_variant": "skeptical"}) + "\n")
     with pytest.raises(ValueError):
         R.check_variant(mixed, "default")
+
+
+def test_execute_records_marker_hidden_by_default():
+    rec = R.execute(FakeClient(text=_valid_output()), R.RunSpec("claude-haiku-5-5", "NBIS", "C1", 0))
+    assert rec["marker_visible"] is False
+    assert "SYNTHETIC" not in R.build_request("claude-haiku-5-5", "NBIS", "C1")["messages"][0]["content"]
+    rec_v = R.execute(FakeClient(text=_valid_output()), R.RunSpec("claude-haiku-5-5", "NBIS", "C1", 0), marker_visible=True)
+    assert rec_v["marker_visible"] is True
+    assert rec_v["packet_sha256"] != rec["packet_sha256"] and rec_v["prompt_sha256"] != rec["prompt_sha256"]
+    assert "(SYNTHETIC)" in R.build_request("claude-haiku-5-5", "NBIS", "C1", marker_visible=True)["messages"][0]["content"]
+
+
+def test_check_variant_refuses_mixed_marker(tmp_path):
+    legacy = str(tmp_path / "old.jsonl")
+    with open(legacy, "w") as f:
+        f.write(json.dumps({"model": "m", "ticker": "NBIS", "condition": "C0", "repeat": 0}) + "\n")
+    assert R.check_variant(legacy, "default", marker_visible=True) is None  # records without the field showed the marker
+    with pytest.raises(ValueError):
+        R.check_variant(legacy, "default")  # default: marker hidden
+    new = str(tmp_path / "new.jsonl")
+    with open(new, "w") as f:
+        f.write(json.dumps({"model": "m", "ticker": "NBIS", "condition": "C0", "repeat": 0, "marker_visible": False}) + "\n")
+    assert R.check_variant(new, "default") is None
+    with pytest.raises(ValueError):
+        R.check_variant(new, "default", marker_visible=True)

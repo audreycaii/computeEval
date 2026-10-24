@@ -152,3 +152,15 @@ def test_load_runs_defaults_variant_and_marker(tmp_path):
     assert df["mentions_synthetic"].sum() == 2
     assert df.loc[rows[2]["run_id"], "system_variant"] == "skeptical"
     assert (df.drop(index=rows[2]["run_id"])["system_variant"] == "default").all()
+
+
+def test_load_runs_marker_visible_defaults_true(tmp_path):
+    import json
+    rows = [json.loads(l) for l in open(FIX)]
+    rows[0]["marker_visible"] = False
+    p = tmp_path / "r.jsonl"
+    p.write_text("\n".join(json.dumps(r) for r in rows) + "\n")
+    df = A.load_runs(str(p)).set_index("run_id")
+    assert df.loc[rows[0]["run_id"], "marker_visible"] == False
+    assert df.loc[rows[1]["run_id"], "marker_visible"] == True
+    assert df["marker_visible"].dtype == bool

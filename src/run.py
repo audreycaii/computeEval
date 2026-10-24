@@ -81,17 +81,21 @@ def completed_keys(path: str) -> Set[Tuple[str, str, str, int]]:
     return done
 
 
-def check_variant(path: str, variant: str) -> None:
-    """Refuse to append runs of one system variant to a file holding another. Records written before
-    the field existed are default-prompt runs."""
+def check_variant(path: str, variant: str, marker_visible: bool = False) -> None:
+    """Refuse to append runs of one system variant, or one marker setting, to a file holding another.
+    Records written before the fields existed are default-prompt runs that showed the marker."""
     if not os.path.exists(path):
         return None
     with open(path, encoding="utf-8") as f:
         for line in f:
             if line.strip():
-                found = json.loads(line).get("system_variant", "default")
+                rec = json.loads(line)
+                found = rec.get("system_variant", "default")
                 if found != variant:
                     raise ValueError("%s holds system_variant=%r, refusing to append %r runs" % (path, found, variant))
+                seen = bool(rec.get("marker_visible", True))
+                if seen != marker_visible:
+                    raise ValueError("%s holds marker_visible=%r, refusing to append marker_visible=%r runs" % (path, seen, marker_visible))
     return None
 
 
@@ -124,12 +128,13 @@ def parse_output(text: str, valid_ids: List[str]) -> Tuple[Optional[Dict], bool,
 
 
 def build_request(model: str, ticker: str, condition: str, effort: str = EFFORT,
-                  plant_style: Optional[str] = None, system_variant: str = "default") -> Dict:
+                  plant_style: Optional[str] = None, system_variant: str = "default",
+                  marker_visible: bool = False) -> Dict:
     return {
         "model": model,
         "max_tokens": MAX_TOKENS if effort != "high" else 16000,
         "system": system_prompt(system_variant),
-        "messages": [{"role": "user", "content": P.build_prompt(ticker, condition, plant_style)}],
+        "messages": [{"role": "user", "content": P.build_prompt(ticker, condition, plant_style, marker_visible)}],
         "output_config": {"format": {"type": "json_schema", "schema": api_schema()}, "effort": effort},
     }
 
@@ -142,16 +147,18 @@ def _text_of(response) -> Optional[str]:
 
 
 def execute(client, spec: RunSpec, max_attempts: int = 3, effort: str = EFFORT,
-            plant_style: Optional[str] = None, system_variant: str = "default") -> Dict:
+            plant_style: Optional[str] = None, system_variant: str = "default",
+            marker_visible: bool = False) -> Dict:
     req = build_request(spec.model, spec.ticker, spec.condition, effort=effort, plant_style=plant_style,
-                        system_variant=system_variant)
-    _, packet_sha = P.render(spec.ticker, spec.condition, plant_style)
+                        system_variant=system_variant, marker_visible=marker_visible)
+    _, packet_sha = P.render(spec.ticker, spec.condition, plant_style, marker_visible)
     prompt_sha = hashlib.sha256((req["system"] + "\n" + req["messages"][0]["content"]).encode("utf-8")).hexdigest()
     valid_ids = P.item_ids(spec.ticker, spec.condition)
     rec = {
         "run_id": uuid.uuid4().hex, "model": spec.model, "model_reported": None, "ticker": spec.ticker,
         "condition": spec.condition, "direction": P.DIRECTION[spec.ticker], "repeat": spec.repeat,
         "effort": effort, "plant_style": plant_style, "system_variant": system_variant,
+        "marker_visible": marker_visible,
         "special_item_id": P.special_item_id(spec.ticker, spec.condition), "packet_sha256": packet_sha,
         "prompt_sha256": prompt_sha, "ts": None, "duration_s": None, "stop_reason": None, "raw_text": None,
         "parsed": None, "parse_ok": False, "unknown_ids": [], "attempts": 0, "input_tokens": 0,
@@ -206,6 +213,8 @@ def main(argv=None) -> int:
     ap.add_argument("--effort", default=EFFORT, choices=["low", "medium", "high"])
     ap.add_argument("--plant-style", default=None, choices=sorted(P.PLANT_STYLES))
     ap.add_argument("--system-variant", default="default", choices=sorted(SYSTEM_VARIANTS))
+    ap.add_argument("--marker-visible", action="store_true",
+                    help="show the (SYNTHETIC) suffix to the model, as the runs under runs/labelled/ did")
     ap.add_argument("--dry-run", action="store_true")
     args = ap.parse_args(argv)
     if args.out is None:
@@ -214,7 +223,8 @@ def main(argv=None) -> int:
     specs = plan_runs(args.models, args.tickers, args.conditions, args.repeats)
     if args.dry_run:
         s = specs[0]
-        req = build_request(s.model, s.ticker, s.condition, args.effort, args.plant_style, args.system_variant)
+        req = build_request(s.model, s.ticker, s.condition, args.effort, args.plant_style, args.system_variant,
+                            args.marker_visible)
         if args.system_variant != "default":
             print(req["system"] + "\n----")
         print(req["messages"][0]["content"])
@@ -225,7 +235,7 @@ def main(argv=None) -> int:
         return 2
     import anthropic
     client = anthropic.Anthropic(max_retries=5)
-    check_variant(args.out, args.system_variant)
+    check_variant(args.out, args.system_variant, args.marker_visible)
     done = completed_keys(args.out)
     todo = [s for s in specs if (s.model, s.ticker, s.condition, s.repeat) not in done]
     print("planned %d, done %d, to run %d" % (len(specs), len(done), len(todo)))
@@ -234,7 +244,8 @@ def main(argv=None) -> int:
     counters = {"ok": 0, "fail": 0, "cost": 0.0}
 
     def work(spec):
-        rec = execute(client, spec, effort=args.effort, plant_style=args.plant_style, system_variant=args.system_variant)
+        rec = execute(client, spec, effort=args.effort, plant_style=args.plant_style, system_variant=args.system_variant,
+                      marker_visible=args.marker_visible)
         with lock:
             with open(args.out, "a", encoding="utf-8") as f:
                 f.write(json.dumps(rec, ensure_ascii=False) + "\n")
