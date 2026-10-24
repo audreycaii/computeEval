@@ -32,7 +32,7 @@ Goals
   and one figure that places every (model, setting) on the (E1, E2) plane.
 - Extension E, *repeat-and-vote*: analysis-only; what happens to N, E1, E2 and selectivity when
   the agent is the median of k independent runs, k in {1, 3, 5}.
-- Extension F, *sceptical prompt*: 360 new runs with one added system-prompt rule; N, E1, E2,
+- Extension F, *sceptical prompt*: 400 new runs with one added system-prompt rule; N, E1, E2,
   selectivity and attribution under that prompt, against the main run.
 - A protocol box in the Method section and a mitigation finding in the Diagnosis section.
 - Pre-registration of D, E and F in `METRICS-EXT2.md`, committed before any F run.

@@ -180,3 +180,9 @@ def test_check_variant_refuses_mixed_file(tmp_path):
     assert R.check_variant(legacy, "default") is None  # records without the field are default runs
     with pytest.raises(ValueError):
         R.check_variant(legacy, "skeptical")
+    mixed = str(tmp_path / "mixed.jsonl")  # a later record with another variant is caught too
+    with open(mixed, "w") as f:
+        f.write(json.dumps({"model": "m", "ticker": "NBIS", "condition": "C0", "repeat": 0, "system_variant": "default"}) + "\n")
+        f.write(json.dumps({"model": "m", "ticker": "NBIS", "condition": "C0", "repeat": 1, "system_variant": "skeptical"}) + "\n")
+    with pytest.raises(ValueError):
+        R.check_variant(mixed, "default")

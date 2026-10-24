@@ -92,7 +92,6 @@ def check_variant(path: str, variant: str) -> None:
                 found = json.loads(line).get("system_variant", "default")
                 if found != variant:
                     raise ValueError("%s holds system_variant=%r, refusing to append %r runs" % (path, found, variant))
-                return None
     return None
 
 
