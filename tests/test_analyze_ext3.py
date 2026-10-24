@@ -92,3 +92,7 @@ def test_ext3_outputs(tmp_path):
     assert not any(ch.isdigit() for n in names for ch in n)
     assert "zOpusSkepticalDeltaEoneVis" in names and "zOpusSkepticalDeltaEoneHid" in names
     assert "zHiddenMarkerShare" in names and "zExpectationEoneNotWeaker" in names
+    marker = Y.marker_check({"medium": vis})
+    Z.write_ext3_numbers(comp, Z.expectations(comp, 0.0), 0.0, nums, labelled_marker=marker)
+    body = open(nums).read()
+    assert "\\newcommand{\\zmAMarkerVisMedCone}" in body or any("MarkerVisMed" in l for l in body.splitlines())

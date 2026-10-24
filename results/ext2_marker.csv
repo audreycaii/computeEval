@@ -1,10 +1,10 @@
 setting,model,condition,n,share
 medium,claude-haiku-5-5,C0,80,0.0
-medium,claude-haiku-5-5,C1,80,0.175
+medium,claude-haiku-5-5,C1,80,0.0
 medium,claude-haiku-5-5,C2,80,0.0
 medium,claude-haiku-5-5,C3,80,0.0
 medium,claude-opus-5-5,C0,80,0.0
-medium,claude-opus-5-5,C1,80,0.2625
+medium,claude-opus-5-5,C1,80,0.0
 medium,claude-opus-5-5,C2,80,0.0
 medium,claude-opus-5-5,C3,80,0.0
 medium,claude-sonnet-5-5,C0,80,0.0
@@ -15,8 +15,8 @@ skeptical,claude-haiku-5-5,C0,80,0.0
 skeptical,claude-haiku-5-5,C1,40,0.0
 skeptical,claude-haiku-5-5,C2,40,0.0
 skeptical,claude-opus-5-5,C0,40,0.0
-skeptical,claude-opus-5-5,C1,40,0.375
+skeptical,claude-opus-5-5,C1,40,0.0
 skeptical,claude-opus-5-5,C2,40,0.0
 skeptical,claude-sonnet-5-5,C0,40,0.0
-skeptical,claude-sonnet-5-5,C1,40,0.025
+skeptical,claude-sonnet-5-5,C1,40,0.0
 skeptical,claude-sonnet-5-5,C2,40,0.0
