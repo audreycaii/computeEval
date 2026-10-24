@@ -93,4 +93,5 @@ See `results/cost.txt` for the total and per-model API spend of the main run ($1
 marker hidden). The marker-hidden extension runs cost a further $18.59: $8.53 for the 480 high-effort
 runs, $4.88 for the 360 provenance runs and $5.18 for the 400 sceptical-prompt runs. The first,
 marker-visible round under `runs/labelled/` cost $31.46 ($12.83 + $8.41 + $4.88 + $5.34). Total
-for both rounds: $62.93, plus the pilots.
+for both rounds: $62.93 (the labelled main-run figure includes the third pilot round; the two discarded
+pilot rounds are extra).

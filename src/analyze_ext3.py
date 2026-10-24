@@ -57,27 +57,46 @@ def marker_comparison(visible_path: str, hidden_path: str, n_boot: int = 2000, s
     return pd.DataFrame(rows)
 
 
-def hidden_marker_share(path: str) -> float:
-    """Construction check: share of valid hidden-marker runs mentioning 'synthetic'."""
-    df = A.load_runs(path)
+def hidden_marker_share(paths) -> float:
+    """Construction check: share of valid marker-hidden runs mentioning 'synthetic', pooled over every
+    file given (a path or a list of paths). Refuses a file whose records showed the marker."""
+    if isinstance(paths, str):
+        paths = [paths]
+    frames = []
+    for path in paths:
+        df = A.load_runs(path)
+        if df["marker_visible"].any():
+            raise ValueError("%s holds marker-visible runs" % path)
+        frames.append(df)
+    df = pd.concat(frames, ignore_index=True) if frames else pd.DataFrame(columns=["mentions_synthetic"])
     return float(df["mentions_synthetic"].mean()) if len(df) else float("nan")
 
 
-def expectations(comp: pd.DataFrame, hidden_marker_share: float, eps: float = EPS) -> Dict[str, object]:
-    """The pre-registered expectations of METRICS-EXT3.md that this module can evaluate (1, 2, 4)."""
+def expectations(comp: pd.DataFrame, hidden_marker_share: float, eps: float = EPS,
+                 skeptical_deltas: Optional[Dict[str, Dict[str, float]]] = None,
+                 model: str = "claude-opus-5-5") -> Dict[str, object]:
+    """The four pre-registered expectations of METRICS-EXT3.md. A drop of exactly eps counts as
+    'not weaker' (the inequality is non-strict, read with a 1e-9 float tolerance)."""
     not_weaker = int((comp["dE1"] >= -eps - 1e-9).sum())
     same_diag = int((comp["diag_vis"] == comp["diag_hid"]).sum())
-    return {
+    out = {
         "E1_not_weaker_models": not_weaker, "E1_not_weaker": not_weaker == len(comp),
         "hidden_marker_share": hidden_marker_share, "hidden_marker_zero": hidden_marker_share == 0.0,
         "same_diagnosis_models": same_diag, "same_diagnosis": same_diag >= 2,
+        "skeptical_dE1_smaller": None,
     }
+    if skeptical_deltas and "vis" in skeptical_deltas and "hid" in skeptical_deltas \
+            and model in skeptical_deltas["vis"] and model in skeptical_deltas["hid"]:
+        out["skeptical_dE1_smaller"] = bool(abs(skeptical_deltas["hid"][model]) < abs(skeptical_deltas["vis"][model]))
+    return out
 
 
 def write_marker_comparison_table(comp: pd.DataFrame, path: str) -> None:
     """Rows: model x {visible, hidden, difference}; columns: the metrics of KEYS. The difference row carries
     the paired interval in script size."""
-    cols = [k for k in KEYS if k != "A1"]  # A1 is 1.00 throughout; the text says so
+    cols = list(KEYS)
+    if np.allclose(comp["A1_vis"], 1.0) and np.allclose(comp["A1_hid"], 1.0):
+        cols.remove("A1")  # saturated under both settings; the paper says so in words
     lines = ["\\begin{tabular}{@{}ll" + "r" * len(cols) + "@{}}", "\\toprule",
              "Model & Marker & " + " & ".join(KEY_LABEL[k] for k in cols) + " \\\\", "\\midrule"]
     for _, r in comp.iterrows():
@@ -112,6 +131,7 @@ def write_ext3_numbers(comp: pd.DataFrame, exp: Dict[str, object], hidden_share:
     put("zHiddenMarkerShare", A._num(hidden_share))
     put("zExpectationEoneNotWeaker", "%d" % exp["E1_not_weaker_models"])
     put("zExpectationSameDiag", "%d" % exp["same_diagnosis_models"])
+    put("zExpectationSkepticalSmaller", {True: "held", False: "failed", None: "--"}[exp.get("skeptical_dE1_smaller")])
     put("zModels", "%d" % len(comp))
     for setting, deltas in (skeptical_deltas or {}).items():
         for model, d in deltas.items():
@@ -140,15 +160,19 @@ def main(argv=None) -> int:
     ap.add_argument("--visible-skeptical", default=os.path.join(P.ROOT, "runs", "labelled", "ext_skeptical.jsonl"))
     ap.add_argument("--out", default=os.path.join(P.ROOT, "results"))
     ap.add_argument("--n-boot", type=int, default=2000)
+    ap.add_argument("--hidden-extra", nargs="*", default=["ext_effort_high.jsonl", "ext_provenance_filing.jsonl",
+                    "ext_provenance_wire.jsonl", "ext_provenance_forum.jsonl"],
+                    help="further marker-hidden run files (beside --hidden) for the construction check")
     args = ap.parse_args(argv)
     os.makedirs(args.out, exist_ok=True)
     comp = marker_comparison(args.visible, args.hidden, n_boot=args.n_boot)
-    share = hidden_marker_share(args.hidden)
-    exp = expectations(comp, share)
+    hidden_files = [args.hidden, args.hidden_skeptical] + [os.path.join(os.path.dirname(args.hidden), n) for n in args.hidden_extra]
+    share = hidden_marker_share([f for f in hidden_files if os.path.exists(f)])
     deltas = {}
     for setting, main_path, skep_path in (("vis", args.visible, args.visible_skeptical), ("hid", args.hidden, args.hidden_skeptical)):
         if os.path.exists(skep_path):
             deltas[setting] = skeptical_delta_e1(main_path, skep_path, args.n_boot)
+    exp = expectations(comp, share, skeptical_deltas=deltas)
     comp.to_csv(os.path.join(args.out, "ext3_marker_comparison.csv"), index=False)
     write_marker_comparison_table(comp, os.path.join(args.out, "ext3_marker_table.tex"))
     labelled = {k: v for k, v in (("medium", args.visible), ("skeptical", args.visible_skeptical)) if os.path.exists(v)}

@@ -95,4 +95,45 @@ def test_ext3_outputs(tmp_path):
     marker = Y.marker_check({"medium": vis})
     Z.write_ext3_numbers(comp, Z.expectations(comp, 0.0), 0.0, nums, labelled_marker=marker)
     body = open(nums).read()
-    assert "\\newcommand{\\zmAMarkerVisMedCone}" in body or any("MarkerVisMed" in l for l in body.splitlines())
+    assert "\\newcommand{\\zmAMarkerVisMedCone}" in body
+
+
+def test_expectation_one_boundary_and_three(tmp_path):
+    vis = _write(tmp_path, "vis.jsonl", _rows())
+    hid = _write(tmp_path, "hid.jsonl", [dict(r, marker_visible=False) for r in _rows()])
+    comp = Z.marker_comparison(vis, hid, n_boot=10)
+    comp["dE1"] = [-0.05000000000000002, -0.0501][: len(comp)] + [0.0] * (len(comp) - 2)
+    exp = Z.expectations(comp, 0.0)
+    assert exp["E1_not_weaker_models"] == len(comp) - 1  # exactly eps counts; beyond eps does not
+    comp["diag_vis"], comp["diag_hid"] = "mixed", "credulous"
+    assert Z.expectations(comp, 0.0)["same_diagnosis_models"] == 0
+    deltas = {"vis": {"claude-opus-5-5": -0.46}, "hid": {"claude-opus-5-5": -0.30}}
+    assert Z.expectations(comp, 0.0, skeptical_deltas=deltas)["skeptical_dE1_smaller"] is True
+    deltas["hid"]["claude-opus-5-5"] = -0.50
+    assert Z.expectations(comp, 0.0, skeptical_deltas=deltas)["skeptical_dE1_smaller"] is False
+    assert Z.expectations(comp, 0.0)["skeptical_dE1_smaller"] is None
+
+
+def test_hidden_marker_share_pools_files_and_refuses_visible(tmp_path):
+    rows = [dict(r, marker_visible=False) for r in _rows()]
+    a = _write(tmp_path, "a.jsonl", rows)
+    rows2 = [dict(r, marker_visible=False, run_id=r["run_id"] + "b") for r in _rows()]
+    rows2[0]["parsed"]["rationale"] = "synthetic"
+    b = _write(tmp_path, "b.jsonl", rows2)
+    n = len(A.load_runs(a))
+    assert Z.hidden_marker_share([a, b]) == pytest.approx(1 / (2 * n))
+    with pytest.raises(ValueError):
+        Z.hidden_marker_share([a, _write(tmp_path, "v.jsonl", _rows())])
+
+
+def test_table_keeps_a1_when_not_saturated(tmp_path):
+    vis = _write(tmp_path, "vis.jsonl", _rows())
+    hid = _write(tmp_path, "hid.jsonl", [dict(r, marker_visible=False) for r in _rows()])
+    comp = Z.marker_comparison(vis, hid, n_boot=10)
+    tex = str(tmp_path / "t.tex")
+    comp2 = comp.copy(); comp2["A1_vis"], comp2["A1_hid"] = 1.0, 1.0
+    Z.write_marker_comparison_table(comp2, tex)
+    assert "$A_1$" not in open(tex).read()
+    comp2["A1_hid"] = 0.5
+    Z.write_marker_comparison_table(comp2, tex)
+    assert "$A_1$" in open(tex).read()
