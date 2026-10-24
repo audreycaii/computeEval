@@ -145,3 +145,38 @@ def test_execute_records_effort_and_style():
     assert rec["effort"] == "high" and rec["plant_style"] == "wire"
     rec0 = R.execute(client, R.RunSpec("claude-haiku-5-5", "NBIS", "C1", 0))
     assert rec0["effort"] == "medium" and rec0["plant_style"] is None
+
+
+def test_system_prompt_variant_adds_rule_five():
+    base, skep = R.system_prompt(), R.system_prompt("skeptical")
+    assert skep.startswith(base.rstrip("\n"))
+    assert "5. Weigh each item by how verifiable its source is" in skep and "5." not in base
+    assert "synthetic" not in skep.lower()
+    with pytest.raises(KeyError):
+        R.system_prompt("nope")
+
+
+def test_execute_records_system_variant():
+    client = FakeClient(text=_valid_output())
+    rec = R.execute(client, R.RunSpec("claude-haiku-5-5", "NBIS", "C1", 0))
+    assert rec["system_variant"] == "default"
+    rec2 = R.execute(FakeClient(text=_valid_output()), R.RunSpec("claude-haiku-5-5", "NBIS", "C1", 0), system_variant="skeptical")
+    assert rec2["system_variant"] == "skeptical"
+    assert rec2["prompt_sha256"] != rec["prompt_sha256"] and rec2["packet_sha256"] == rec["packet_sha256"]
+    assert R.build_request("claude-haiku-5-5", "NBIS", "C1", system_variant="skeptical")["system"] == R.system_prompt("skeptical")
+
+
+def test_check_variant_refuses_mixed_file(tmp_path):
+    path = str(tmp_path / "runs.jsonl")
+    assert R.check_variant(path, "skeptical") is None  # missing file is fine
+    with open(path, "w") as f:
+        f.write(json.dumps({"model": "m", "ticker": "NBIS", "condition": "C0", "repeat": 0, "system_variant": "skeptical"}) + "\n")
+    assert R.check_variant(path, "skeptical") is None
+    with pytest.raises(ValueError):
+        R.check_variant(path, "default")
+    legacy = str(tmp_path / "old.jsonl")
+    with open(legacy, "w") as f:
+        f.write(json.dumps({"model": "m", "ticker": "NBIS", "condition": "C0", "repeat": 0}) + "\n")
+    assert R.check_variant(legacy, "default") is None  # records without the field are default runs
+    with pytest.raises(ValueError):
+        R.check_variant(legacy, "skeptical")

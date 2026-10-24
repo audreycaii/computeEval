@@ -17,6 +17,8 @@ from src.pricing import cost_usd
 MODELS = ["claude-opus-5-5", "claude-sonnet-5-5", "claude-haiku-5-5"]
 EFFORT = "medium"
 MAX_TOKENS = 8000
+# Extension F: the sceptical variant adds one rule to the system prompt (METRICS-EXT2.md).
+SYSTEM_VARIANTS = {"default": "system.txt", "skeptical": "system_skeptical.txt"}
 RunSpec = namedtuple("RunSpec", "model ticker condition repeat")
 
 _SCHEMA = None
@@ -45,8 +47,8 @@ def api_schema() -> Dict:
     return strip(schema())
 
 
-def system_prompt() -> str:
-    with open(os.path.join(P.PROMPT_DIR, "system.txt"), encoding="utf-8") as f:
+def system_prompt(variant: str = "default") -> str:
+    with open(os.path.join(P.PROMPT_DIR, SYSTEM_VARIANTS[variant]), encoding="utf-8") as f:  # KeyError for unknown
         return f.read()
 
 
@@ -79,6 +81,21 @@ def completed_keys(path: str) -> Set[Tuple[str, str, str, int]]:
     return done
 
 
+def check_variant(path: str, variant: str) -> None:
+    """Refuse to append runs of one system variant to a file holding another. Records written before
+    the field existed are default-prompt runs."""
+    if not os.path.exists(path):
+        return None
+    with open(path, encoding="utf-8") as f:
+        for line in f:
+            if line.strip():
+                found = json.loads(line).get("system_variant", "default")
+                if found != variant:
+                    raise ValueError("%s holds system_variant=%r, refusing to append %r runs" % (path, found, variant))
+                return None
+    return None
+
+
 def parse_output(text: str, valid_ids: List[str]) -> Tuple[Optional[Dict], bool, List[str]]:
     try:
         data = json.loads(text)
@@ -108,11 +125,11 @@ def parse_output(text: str, valid_ids: List[str]) -> Tuple[Optional[Dict], bool,
 
 
 def build_request(model: str, ticker: str, condition: str, effort: str = EFFORT,
-                  plant_style: Optional[str] = None) -> Dict:
+                  plant_style: Optional[str] = None, system_variant: str = "default") -> Dict:
     return {
         "model": model,
         "max_tokens": MAX_TOKENS if effort != "high" else 16000,
-        "system": system_prompt(),
+        "system": system_prompt(system_variant),
         "messages": [{"role": "user", "content": P.build_prompt(ticker, condition, plant_style)}],
         "output_config": {"format": {"type": "json_schema", "schema": api_schema()}, "effort": effort},
     }
@@ -126,15 +143,16 @@ def _text_of(response) -> Optional[str]:
 
 
 def execute(client, spec: RunSpec, max_attempts: int = 3, effort: str = EFFORT,
-            plant_style: Optional[str] = None) -> Dict:
-    req = build_request(spec.model, spec.ticker, spec.condition, effort=effort, plant_style=plant_style)
+            plant_style: Optional[str] = None, system_variant: str = "default") -> Dict:
+    req = build_request(spec.model, spec.ticker, spec.condition, effort=effort, plant_style=plant_style,
+                        system_variant=system_variant)
     _, packet_sha = P.render(spec.ticker, spec.condition, plant_style)
     prompt_sha = hashlib.sha256((req["system"] + "\n" + req["messages"][0]["content"]).encode("utf-8")).hexdigest()
     valid_ids = P.item_ids(spec.ticker, spec.condition)
     rec = {
         "run_id": uuid.uuid4().hex, "model": spec.model, "model_reported": None, "ticker": spec.ticker,
         "condition": spec.condition, "direction": P.DIRECTION[spec.ticker], "repeat": spec.repeat,
-        "effort": effort, "plant_style": plant_style,
+        "effort": effort, "plant_style": plant_style, "system_variant": system_variant,
         "special_item_id": P.special_item_id(spec.ticker, spec.condition), "packet_sha256": packet_sha,
         "prompt_sha256": prompt_sha, "ts": None, "duration_s": None, "stop_reason": None, "raw_text": None,
         "parsed": None, "parse_ok": False, "unknown_ids": [], "attempts": 0, "input_tokens": 0,
@@ -184,17 +202,23 @@ def main(argv=None) -> int:
     ap.add_argument("--tickers", nargs="+", default=P.TICKERS)
     ap.add_argument("--conditions", nargs="+", default=P.CONDITIONS)
     ap.add_argument("--repeats", type=int, default=10)
-    ap.add_argument("--out", default=os.path.join(P.ROOT, "runs", "runs.jsonl"))
+    ap.add_argument("--out", default=None, help="default runs/runs.jsonl, or runs/ext_skeptical.jsonl for --system-variant skeptical")
     ap.add_argument("--concurrency", type=int, default=4)
     ap.add_argument("--effort", default=EFFORT, choices=["low", "medium", "high"])
     ap.add_argument("--plant-style", default=None, choices=sorted(P.PLANT_STYLES))
+    ap.add_argument("--system-variant", default="default", choices=sorted(SYSTEM_VARIANTS))
     ap.add_argument("--dry-run", action="store_true")
     args = ap.parse_args(argv)
+    if args.out is None:
+        args.out = os.path.join(P.ROOT, "runs", "runs.jsonl" if args.system_variant == "default" else "ext_%s.jsonl" % args.system_variant)
 
     specs = plan_runs(args.models, args.tickers, args.conditions, args.repeats)
     if args.dry_run:
         s = specs[0]
-        print(build_request(s.model, s.ticker, s.condition, args.effort, args.plant_style)["messages"][0]["content"])
+        req = build_request(s.model, s.ticker, s.condition, args.effort, args.plant_style, args.system_variant)
+        if args.system_variant != "default":
+            print(req["system"] + "\n----")
+        print(req["messages"][0]["content"])
         return 0
     load_env()
     if not os.environ.get("ANTHROPIC_API_KEY"):
@@ -202,6 +226,7 @@ def main(argv=None) -> int:
         return 2
     import anthropic
     client = anthropic.Anthropic(max_retries=5)
+    check_variant(args.out, args.system_variant)
     done = completed_keys(args.out)
     todo = [s for s in specs if (s.model, s.ticker, s.condition, s.repeat) not in done]
     print("planned %d, done %d, to run %d" % (len(specs), len(done), len(todo)))
@@ -210,7 +235,7 @@ def main(argv=None) -> int:
     counters = {"ok": 0, "fail": 0, "cost": 0.0}
 
     def work(spec):
-        rec = execute(client, spec, effort=args.effort, plant_style=args.plant_style)
+        rec = execute(client, spec, effort=args.effort, plant_style=args.plant_style, system_variant=args.system_variant)
         with lock:
             with open(args.out, "a", encoding="utf-8") as f:
                 f.write(json.dumps(rec, ensure_ascii=False) + "\n")

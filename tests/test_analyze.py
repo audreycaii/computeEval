@@ -136,3 +136,19 @@ def test_unknown_ids_are_counted(tmp_path):
     out = str(tmp_path / "numbers.tex")
     A.write_numbers(A.pooled(cells), cells, A.load_all_rows(str(p)), out)
     assert "\\newcommand{\\nUnknownIds}{1}" in open(out).read()
+
+
+def test_load_runs_defaults_variant_and_marker(tmp_path):
+    import json
+    rows = [json.loads(l) for l in open(FIX)]
+    rows[0]["parsed"]["rationale"] = "The Synthetic item is discounted."
+    rows[1]["parsed"]["drivers"][0]["claim"] = "A SYNTHETIC wire report says so"
+    rows[2]["system_variant"] = "skeptical"
+    p = tmp_path / "r.jsonl"
+    p.write_text("\n".join(json.dumps(r) for r in rows) + "\n")
+    df = A.load_runs(str(p)).set_index("run_id")
+    assert df.loc[rows[0]["run_id"], "mentions_synthetic"] == True
+    assert df.loc[rows[1]["run_id"], "mentions_synthetic"] == True
+    assert df["mentions_synthetic"].sum() == 2
+    assert df.loc[rows[2]["run_id"], "system_variant"] == "skeptical"
+    assert (df.drop(index=rows[2]["run_id"])["system_variant"] == "default").all()
