@@ -1,4 +1,7 @@
 anthropic==0.125.0
+numpy
+pandas
+scipy
 matplotlib
 jsonschema
 pytest
